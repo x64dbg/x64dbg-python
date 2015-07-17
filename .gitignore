@@ -2,6 +2,7 @@ bin/
 obj/
 Win32/
 x64/
+minidump/
 *.opensdf
 *.sdf
 *.suo
@@ -12,7 +13,7 @@ x64/
 ipch/
 .idea
 swig/build/
-swig/x64dbg_python/pluginsdk/_x64dbg.cpp
+swig/x64dbg_wrap.cpp
 swig/x64dbg_python/pluginsdk/x64dbg.py
 swig/compile*.bat
 swig/x64dbg_python/autorun/*.py
