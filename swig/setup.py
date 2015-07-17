@@ -20,7 +20,7 @@ setup(
     ],
     package_data={'x64dbg_python': ['autorun/*']},
     ext_modules=[Extension(
-        r'x64dbg_python.pluginsdk.__x64dbg', [r'x64dbg_python\pluginsdk\__x64dbg.cpp'],
+        r'x64dbg_python.pluginsdk._x64dbg', [r'x64dbg_python\pluginsdk\_x64dbg.cpp'],
         language='c++',
         include_dirs=[r'..\pluginsdk'],
         library_dirs=[r'..\pluginsdk'],

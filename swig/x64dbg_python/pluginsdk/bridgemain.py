@@ -1,5 +1,5 @@
 import ctypes
-from . import _x64dbg
+from . import x64dbg
 # from ..utils import is_64bit
 
 
@@ -10,17 +10,17 @@ GUI_MAX_LINE_SIZE = 65536
 
 
 def DbgIsDebugging():
-    return _x64dbg.DbgIsDebugging()
+    return x64dbg.DbgIsDebugging()
 
 def GuiGetLineWindow(title=''):
     line = ctypes.create_string_buffer(GUI_MAX_LINE_SIZE)
-    return_value = _x64dbg.GuiGetLineWindow("%s" % title, line)
+    return_value = x64dbg.GuiGetLineWindow("%s" % title, line)
     if return_value:
         return line.value
 
 def GuiGetWindowHandle():
-    return _x64dbg.GuiGetWindowHandle()
+    return x64dbg.GuiGetWindowHandle()
 
 def GuiLogClear():
-    _x64dbg.GuiLogClear()
+    x64dbg.GuiLogClear()
 

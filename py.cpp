@@ -111,7 +111,7 @@ static void OpenScript()
 
 static bool cbOpenScriptCommand(int argc, char* argv[])
 {
-    _plugin_startscript(OpenScript);
+    GuiExecuteOnGuiThread(OpenScript);
     return true;
 }
 
@@ -125,7 +125,7 @@ static void cbWinEventCallback(CBTYPE cbType, void* info)
         switch(msg->lParam)
         {
         case ALT_F7_SYSKEYDOWN:
-            _plugin_startscript(OpenScript);
+            GuiExecuteOnGuiThread(OpenScript);
             break;
         }
         break;
