@@ -1,12 +1,8 @@
 import ctypes
 from . import x64dbg
-# from ..utils import is_64bit
 
 
 GUI_MAX_LINE_SIZE = 65536
-
-# duint = ctypes.c_ulonglong if is_64bit() else ctypes.c_ulong
-# dsint = ctypes.c_longlong if is_64bit() else ctypes.c_long
 
 
 def DbgIsDebugging():

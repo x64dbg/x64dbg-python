@@ -1,4 +1,4 @@
-%module _scriptapi
+%module _scriptapi_misc
 %{
 #include "_scriptapi_misc.h"
 %}

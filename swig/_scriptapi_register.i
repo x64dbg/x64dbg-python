@@ -1,4 +1,4 @@
-%module _scriptapi
+%module _scriptapi_register
 %{
 #include "_scriptapi_register.h"
 %}

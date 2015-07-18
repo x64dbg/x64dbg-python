@@ -15,3 +15,4 @@
 %include "_scriptapi_misc.i"
 %include "_scriptapi_stack.i"
 %include "_scriptapi_assembler.i"
+%include "_scriptapi_module.i"

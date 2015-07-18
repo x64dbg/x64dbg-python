@@ -1,4 +1,4 @@
-%module _scriptapi
+%module _scriptapi_memory
 %{
 #include "_scriptapi_memory.h"
 %}

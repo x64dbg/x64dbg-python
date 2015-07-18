@@ -1,4 +1,4 @@
-%module _scriptapi
+%module _scriptapi_assembler
 %{
 #include "_scriptapi_assembler.h"
 %}
