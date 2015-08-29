@@ -169,9 +169,7 @@ typedef enum
     DBG_GET_STRING_AT,              // param1=duint addr,                param2=unused
     DBG_GET_FUNCTIONS,              // param1=unused,                    param2=unused
     DBG_WIN_EVENT,                  // param1=MSG* message,              param2=long* result
-    DBG_WIN_EVENT_GLOBAL,           // param1=MSG* message,              param2=unused
-    DBG_INITIALIZE_LOCKS,           // param1=unused,                    param2=unused
-    DBG_DEINITIALIZE_LOCKS          // param1=unused,                    param2=unused
+    DBG_WIN_EVENT_GLOBAL            // param1=MSG* message,              param2=unused
 } DBGMSG;
 
 typedef enum
