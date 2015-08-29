@@ -1,5 +1,6 @@
 import sys
 import __builtin__
+from os import path
 from pluginsdk import bridgemain, _plugins
 
 
@@ -55,6 +56,9 @@ STDERR_HOOK.start()
 # Hook raw_input, input (stdin)
 __builtin__.raw_input = __raw_input
 __builtin__.input = __input
+
+# Set arguments
+sys.argv = [path.join(path.dirname(__file__), '__init__.py')]
 
 # Print Message That The Hooks Worked!
 print '[PYTHON] stdout, stderr, raw_input hooked!'

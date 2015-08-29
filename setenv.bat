@@ -10,7 +10,11 @@ IF EXIST "%PROGRAMFILES(X86)%" (
         setx PYTHON27X86 %%x
     )
     
-    set VCVARSX64="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
+    IF EXIST "%VS90COMNTOOLS%" (
+        set VCVARSX64="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
+    ) ELSE (
+        set VCVARSX64="%ProgramFiles(x86)%\Microsoft Visual Studio 9.0\VC\bin\vcvarsx86_amd64.bat"
+    )
     FOR /f "tokens=3" %%x IN ('reg query HKLM\SOFTWARE\Python\PythonCore\2.7\InstallPath /ve') DO (
         set PYTHON27X64=%%x
         setx PYTHON27X64 %%x

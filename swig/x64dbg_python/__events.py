@@ -1,7 +1,12 @@
+import os
+from os import path
+import runpy
+import glob
 
 EVENTS = [
-    'breakpoint',
+    'init_debug',
     'stop_debug',
+    'breakpoint',
     'create_process',
     'exit_process',
     'create_thread',
@@ -95,3 +100,15 @@ class Event(object):
             raise Exception("%s Is not a valid event." % event_name_lower)
 
         setattr(self, event_name_lower, callback)
+
+    @staticmethod
+    def init_debug():
+        old_path = os.getcwdu()
+        os.chdir(path.join(path.dirname(__file__), 'autorun'))
+        for file_path in glob.glob("*.py"):
+            print "[PYTHON] Executing autorun file: '%s'." % file_path
+            runpy.run_path(
+                path_name=file_path,
+                run_name='__main__',
+            )
+            os.chdir(old_path)
