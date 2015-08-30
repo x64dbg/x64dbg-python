@@ -43,10 +43,55 @@ static bool cbPythonCommand(int argc, char* argv[])
     return true;
 }
 
+static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
+{
+    OPENFILENAMEW sOpenFileName = {0};
+    const wchar_t szFilterString[] = L"Python files\0*.py\0\0";
+    const wchar_t szDialogTitle[] = L"Select script file...";
+    sOpenFileName.lStructSize = sizeof(sOpenFileName);
+    sOpenFileName.lpstrFilter = szFilterString;
+    sOpenFileName.nFilterIndex = 1;
+    sOpenFileName.lpstrFile = Buffer;
+    sOpenFileName.nMaxFile = MAX_PATH;
+    sOpenFileName.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+    sOpenFileName.lpstrTitle = szDialogTitle;
+    sOpenFileName.hwndOwner = GuiGetWindowHandle();
+    return (FALSE != GetOpenFileNameW(&sOpenFileName));
+}
+
+static bool ExecutePythonScript(wchar_t* szFileName)
+{
+    int status_code;
+    String szFileNameA = Utf16ToUtf8(szFileName);
+    PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
+    if(PyFileObject == NULL)
+    {
+        _plugin_logprintf("[PYTHON] Could not open file....");
+        PyErr_PrintEx(0);
+        return false;
+    }
+
+    status_code = PyRun_SimpleFile(PyFile_AsFile(PyFileObject), (char*)szFileNameA.c_str());
+    Py_DECREF(PyFileObject);
+    if(status_code != EXIT_SUCCESS)
+    {
+        _plugin_logprintf("[PYTHON] Execution failed (status code: %d)....\n", status_code);
+        PyErr_PrintEx(0);
+        return false;
+    }
+
+    _plugin_logputs("[PYTHON] Execution is done!");
+    return true;
+}
+
 // OpenScript [EntryPointVA]
 static void OpenScript()
 {
-    PyRun_SimpleString("utils.open_python_file()\n");
+    wchar_t szFileName[MAX_PATH] = {0};
+    if(!OpenFileDialog(szFileName))
+        return;
+
+    ExecutePythonScript(szFileName);
 }
 
 static bool cbOpenScriptCommand(int argc, char* argv[])
@@ -74,22 +119,34 @@ static void cbWinEventCallback(CBTYPE cbType, void* info)
 
 static void cbInitDebugCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pValue;
+    WIN32_FIND_DATAW FindFileData;
+    HANDLE hFind = INVALID_HANDLE_VALUE;
+    wchar_t autorunDirectory[MAX_PATH], currentDirectory[MAX_PATH];
 
-    pFunc = PyObject_GetAttrString(pEventObject, "init_debug");
-    if(pFunc && PyCallable_Check(pFunc))
+    // Get Autorun Folder Path
+    GetModuleFileNameW(NULL, autorunDirectory, MAX_PATH);
+    PathRemoveFileSpecW(autorunDirectory);
+    PathAppendW(autorunDirectory, autorun_directory);
+
+    // Get Current Directory
+    GetCurrentDirectoryW(MAX_PATH, currentDirectory);
+
+    // Find And Execute *.py Files
+    SetCurrentDirectoryW(autorunDirectory);
+    hFind = FindFirstFileW(L"*.py", &FindFileData);
+    if(hFind != INVALID_HANDLE_VALUE)
     {
-        pValue = PyObject_CallObject(pFunc, NULL);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
+        do
         {
-            _plugin_logputs("[PYTHON] Could not use init_debug function.");
-            PyErr_PrintEx(0);
-            return;
+            _plugin_logprintf("[PYTHON] Executing autorun file: '%ws'.\n", FindFileData.cFileName);
+            ExecutePythonScript(FindFileData.cFileName);
         }
-        Py_DECREF(pValue);
+        while(FindNextFileW(hFind, &FindFileData) != 0);
+        FindClose(hFind);
     }
+
+    // Reset Current Directory
+    SetCurrentDirectoryW(currentDirectory);
 }
 
 static void cbUnloadDllCallback(CBTYPE cbType, void* info)
@@ -510,7 +567,6 @@ void pyInit(PLUG_INITSTRUCT* initStruct)
         _plugin_logputs("[PYTHON] error registering the \"OpenScript\" command!");
 
     // Initialize the python environment
-    Py_SetProgramName(module_name);
     Py_Initialize();
     PyEval_InitThreads();
 
