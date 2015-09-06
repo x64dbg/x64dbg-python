@@ -20,3 +20,5 @@ def GuiGetWindowHandle():
 def GuiLogClear():
     x64dbg.GuiLogClear()
 
+def GuiUpdateAllViews():
+    x64dbg.GuiUpdateAllViews()
