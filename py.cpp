@@ -18,6 +18,8 @@
 PyObject* pModule, *pEventObject;
 HINSTANCE hInst;
 
+static void Editor();
+
 extern "C" __declspec(dllexport) void CBMENUENTRY(CBTYPE cbType, PLUG_CB_MENUENTRY* info)
 {
     switch(info->hEntry)
@@ -29,22 +31,11 @@ extern "C" __declspec(dllexport) void CBMENUENTRY(CBTYPE cbType, PLUG_CB_MENUENT
     case MENU_ABOUT:
         MessageBoxA(hwndDlg, "Made By RealGame(Tomer Zait)", plugin_name " Plugin", MB_ICONINFORMATION);
         break;
+
+	case MENU_EDITOR:
+		Editor();
+		break;
     }
-}
-
-void printPyErr()
-{
-    PyObject* ptype, *pvalue, *ptraceback;
-    PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-    PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
-
-    _plugin_logprintf("         %-9s: %s.\n", "Type", PyString_AsString(PyObject_Str(ptype)));
-    _plugin_logprintf("         %-9s: %s.\n", "Message", PyString_AsString(PyObject_Str(pvalue)));
-    _plugin_logprintf("         %-9s: %s.\n", "Traceback", PyString_AsString(PyObject_Str(ptraceback)));
-
-    Py_DECREF(ptype);
-    Py_DECREF(pvalue);
-    Py_DECREF(ptraceback);
 }
 
 static bool cbPythonCommand(int argc, char* argv[])
@@ -82,7 +73,7 @@ static bool ExecutePythonScript(wchar_t* szFileName)
     if(PyFileObject == NULL)
     {
         _plugin_logprintf("[PYTHON] Could not open file....");
-        printPyErr();
+        PyErr_PrintEx(0);
         return false;
     }
 
@@ -91,7 +82,7 @@ static bool ExecutePythonScript(wchar_t* szFileName)
     if(status_code != EXIT_SUCCESS)
     {
         _plugin_logprintf("[PYTHON] Execution failed (status code: %d)....\n", status_code);
-        printPyErr();
+        PyErr_PrintEx(0);
         return false;
     }
 
@@ -109,9 +100,18 @@ static void OpenScript()
     ExecutePythonScript(szFileName);
 }
 
+// editor
+static void Editor()
+{
+    wchar_t szFileName[MAX_PATH] = {0};
+	char szDir[256]; GetCurrentDirectoryA(256,szDir); _plugin_logputs(szDir);
+    ExecutePythonScript(L"plugins\\X64Dbg_editor\\Editor_x64dbg.py");
+}
+
+
 static bool cbOpenScriptCommand(int argc, char* argv[])
 {
-    _plugin_startscript(OpenScript);
+    GuiExecuteOnGuiThread(OpenScript);
     return true;
 }
 
@@ -125,7 +125,7 @@ static void cbWinEventCallback(CBTYPE cbType, void* info)
         switch(msg->lParam)
         {
         case ALT_F7_SYSKEYDOWN:
-            _plugin_startscript(OpenScript);
+            GuiExecuteOnGuiThread(OpenScript);
             break;
         }
         break;
@@ -188,7 +188,7 @@ static void cbUnloadDllCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use unload_dll function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -273,7 +273,7 @@ static void cbLoadDllCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use load_dll function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -298,7 +298,7 @@ static void cbSystemBreakpointCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use system_breakpoint function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
         Py_DECREF(pValue);
@@ -330,7 +330,7 @@ static void cbExitThreadCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use exit_thread function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -371,7 +371,7 @@ static void cbCreateThreadCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use exit_process function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -403,7 +403,7 @@ static void cbExitProcessCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use exit_process function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -502,7 +502,7 @@ static void cbCreateProcessCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use create_process function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -541,7 +541,7 @@ static void cbBreakPointCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use breakpoint function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
 
@@ -566,7 +566,7 @@ static void cbStopDebugCallback(CBTYPE cbType, void* info)
         if(pValue == NULL)
         {
             _plugin_logputs("[PYTHON] Could not use stop_debug function.");
-            printPyErr();
+            PyErr_PrintEx(0);
             return;
         }
         Py_DECREF(pValue);
@@ -592,10 +592,16 @@ void pyInit(PLUG_INITSTRUCT* initStruct)
         // Get Event Object
         pEventObject = PyObject_GetAttrString(pModule, event_object_name);
         if(pEventObject == NULL)
+        {
             _plugin_logputs("[PYTHON] Could not find Event object.");
+            PyErr_PrintEx(0);
+        }
     }
     else
+    {
         _plugin_logputs("[PYTHON] Could not import " module_name ".");
+        PyErr_PrintEx(0);
+    }
 
     PyRun_SimpleString("from " module_name " import *\n");
 }
@@ -604,6 +610,7 @@ void pyStop()
 {
     _plugin_unregistercommand(pluginHandle, "Python");
     _plugin_unregistercommand(pluginHandle, "OpenScript");
+    _plugin_unregistercommand(pluginHandle,, "&x64 Python Editor...\tALT+F8");
 
     _plugin_menuclear(hMenu);
     _plugin_menuclear(hMenuDisasm);
@@ -626,6 +633,8 @@ void pyStop()
     Py_Finalize();
 }
 
+
+
 void pySetup()
 {
     // Set Menu Icon
@@ -641,6 +650,7 @@ void pySetup()
     FreeResource(hMem);
     _plugin_menuaddentry(hMenu, MENU_OPEN, "&OpenScript...\tALT+F7");
     _plugin_menuaddentry(hMenu, MENU_ABOUT, "&About");
+    _plugin_menuaddentry(hMenu, MENU_EDITOR, "&x64 Python Editor...\tALT+F8");
 
     // Set Callbacks
     _plugin_registercallback(pluginHandle, CB_WINEVENT, cbWinEventCallback);
