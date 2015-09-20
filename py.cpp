@@ -610,7 +610,7 @@ void pyStop()
 {
     _plugin_unregistercommand(pluginHandle, "Python");
     _plugin_unregistercommand(pluginHandle, "OpenScript");
-    _plugin_unregistercommand(pluginHandle,, "&x64 Python Editor...\tALT+F8");
+    _plugin_unregistercommand(pluginHandle, "Editor");
 
     _plugin_menuclear(hMenu);
     _plugin_menuclear(hMenuDisasm);
