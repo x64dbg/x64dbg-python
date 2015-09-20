@@ -14,5 +14,6 @@ then in vc2010 prompt goto build folder.
 run install32.bat.
 
 watch the small video what to do then.
+CLICK picture below to see video!
 
 [![Building and installing x64dbg python](http://i.imgur.com/dfk6QSm.png)](https://www.youtube.com/watch?t=4&v=Kq79-DqoUXo "Building and installing x64dbg python")
