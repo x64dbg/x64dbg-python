@@ -12,7 +12,7 @@ call %VCVARSX86%
 "%PYTHON27X86%\python.exe" setup.py  install --install-lib="%PLUGINDIR%"
 @cd %PLUGINDIR%
 "%PYTHON27X86%\python.exe"  PyQt-win-gpl-4.11.4-x64dbg-edition-download.py
-rename master.zip PyQt4_for_xdbg64_installer.zip
+rename "master.zip" "PyQt4_for_xdbg64_installer.zip"
 del PyQt-win-gpl-4.11.4-x64dbg-edition-download.py
 @cd %~dp0
 XCOPY 3party\X64Dbg_editor\* %PLUGINDIR%\X64Dbg_editor\ /s /i
