@@ -1,5 +1,7 @@
+import functools
 from utils import is_64bit
 from pluginsdk import _scriptapi
+from pluginsdk.bridgemain import GuiUpdateAllViews
 
 
 X86_DEBUG_REGISTERS = (
@@ -36,7 +38,17 @@ GEN_REGISTERS = (
 
 REGISTERS = (X64_REGISTERS if is_64bit() else X86_REGISTERS) + GEN_REGISTERS
 
+
 class Register(object):
+    def __init__(self, refresh_gui=True):
+        self.refresh_gui = refresh_gui
+
+        for register in REGISTERS:
+            setattr(self.__class__, register, property(
+                fget=functools.partial(self._get_func, register=register),
+                fset=functools.partial(self._set_func, register=register)
+            ))
+
     @staticmethod
     def __get_reg_function(register, get=True):
         register_name = register.upper()
@@ -50,11 +62,16 @@ class Register(object):
             '{method}{register}'.format(
                 method='Get' if get else 'Set',
                 register=register_name
-            ),
+            )
         )
 
-    def __getattr__(self, item):
-        return self.__get_reg_function(item)()
+    @staticmethod
+    def _get_func(self, register):
+        return self.__get_reg_function(register)()
 
-    def __setattr__(self, key, value):
-        self.__get_reg_function(key, get=False)(value)
+    @staticmethod    
+    def _set_func(self, value, register):
+        self.__get_reg_function(register, get=False)(value)
+        if self.refresh_gui:
+            GuiUpdateAllViews()
+

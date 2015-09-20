@@ -15,4 +15,4 @@ void pyInit(PLUG_INITSTRUCT* initStruct);
 void pyStop();
 void pySetup();
 
-#endif // _X64DBGPYTHON_H
+#endif // _PY_H

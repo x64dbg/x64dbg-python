@@ -650,7 +650,7 @@ void pySetup()
     FreeResource(hMem);
     _plugin_menuaddentry(hMenu, MENU_OPEN, "&OpenScript...\tALT+F7");
     _plugin_menuaddentry(hMenu, MENU_ABOUT, "&About");
-    _plugin_menuaddentry(hMenu, MENU_EDITOR, "&x64 Python Editor...\tALT+F8");
+    _plugin_menuaddentry(hMenu, MENU_EDITOR, "Editor");
 
     // Set Callbacks
     _plugin_registercallback(pluginHandle, CB_WINEVENT, cbWinEventCallback);

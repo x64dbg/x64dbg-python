@@ -1,4 +1,4 @@
-%module _x64dbg
+%module x64dbg
 
 // bridgemain.h
 %include "bridgemain.i"
