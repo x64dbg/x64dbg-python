@@ -4,14 +4,15 @@ import re
 import os
 from os import path
 import sys
-print os.getcwd()
-os.chdir("plugins\\X64Dbg_editor\\")
-sys.path.insert(0, os.getcwd()+r'\icons')
+dn = os.getcwd()
+sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor\\\icons')
+sys.path.insert(0, dn)
 import PyQt4
 from PyQt4 import QtCore, QtGui, Qsci
 from PyQt4.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs, QsciScintillaBase
 from PyQt4.QtGui import QFont, QFontMetrics, QColor, QMainWindow, QTextCursor
 import ico
+
 
 
 
@@ -232,7 +233,7 @@ class Ui_MainWindow(object):
         if self.filename:
             with open(self.filename,"r") as self.file:
                 self.codebox.setText(self.file.read())
-        os.chdir(str(self.path))
+        os.chdir(str(self.path)), os.chdir(dn)
 
 
 
@@ -243,7 +244,8 @@ class Ui_MainWindow(object):
             )
         if self.filename:
             self.savetext(self.filename)
-        os.chdir(str(self.path))
+        os.chdir(str(self.path)), os.chdir(dn)
+
 
 
     def savetext(self, fileName):
@@ -263,14 +265,14 @@ class Ui_MainWindow(object):
         script = str(self.codebox.text())
         try:
             exec (script, g)
-            QtGui.QCloseEvent()
+            QtGui.QCloseEvent(), os.chdir(dn)
 
         except ImportError:
             os.chdir(str(self.path))
             os.path.join(os.path.expanduser('~'), os.path.expandvars(str(self.path)))
             sys.path.insert(0, str(self.path))
             exec (script, g)
-            QtGui.QCloseEvent()
+            QtGui.QCloseEvent(), os.chdir(dn)
 
 
     def nofoldingl(self):
