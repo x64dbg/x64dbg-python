@@ -5,13 +5,17 @@ import os
 from os import path
 import sys
 dn = os.getcwd()
-sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor\\\icons')
+sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor\\icons')
+apiss = sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor\\')
 sys.path.insert(0, dn)
 import PyQt4
 from PyQt4 import QtCore, QtGui, Qsci
 from PyQt4.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs, QsciScintillaBase
 from PyQt4.QtGui import QFont, QFontMetrics, QColor, QMainWindow, QTextCursor
-import ico
+try:
+    import ico
+except ImportError:
+    import icons.ico
 
 
 
@@ -184,7 +188,7 @@ class Ui_MainWindow(object):
         lexer = QsciLexerPython(self.codebox)
         #api test not working
         api = Qsci.QsciAPIs(lexer)
-        apidir = os.path.dirname(os.path.realpath(__file__))
+        apidir = str(dn)
         API_FILE = apidir+r'\python.api'
         api.load(API_FILE)
         api.prepare()
@@ -265,14 +269,16 @@ class Ui_MainWindow(object):
         script = str(self.codebox.text())
         try:
             exec (script, g)
-            QtGui.QCloseEvent(), os.chdir(dn)
-
+            QtGui.QCloseEvent()
+            os.chdir(dn)
+			
         except ImportError:
             os.chdir(str(self.path))
             os.path.join(os.path.expanduser('~'), os.path.expandvars(str(self.path)))
             sys.path.insert(0, str(self.path))
             exec (script, g)
-            QtGui.QCloseEvent(), os.chdir(dn)
+            QtGui.QCloseEvent()
+            os.chdir(dn)
 
 
     def nofoldingl(self):
