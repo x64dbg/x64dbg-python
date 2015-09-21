@@ -15,8 +15,8 @@ added Python editor to x64dbg
 Howto:
 ```
 Download this branch v25
-first build x64dbg-python.sln with visual studio 2010
-then in vc2010 prompt goto build folder.
+first build x64dbg-python.sln with visual studio 2013
+then in vc2013 prompt goto build folder.
 run install32.bat.
 ```
 
