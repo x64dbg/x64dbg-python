@@ -1,4 +1,27 @@
 # Created by Storm Shadow www.techbliss.org
+print "##################################################\n" \
+    " #              Author Storm Shadow                # \n" \
+    " #                   Hotkeys                       # \n" \
+    " #         NewFile:            Ctrl+N              #\n" \
+    " #         OpenFile:           Ctrl+O              #\n" \
+    " #         SaveFile:           Ctrl+S              #\n" \
+    " #         RunScript:          Ctrl+E              #\n" \
+    " #         Undo:               Ctrl+Z              #\n" \
+    " #         Redo:               Ctrl+Y              #\n" \
+    " #         SelectALL:          Ctrl+A              #\n" \
+    " #         Paste:              Ctrl+V              #\n" \
+    " #         ResetFolding:       Ctrl+R              #\n" \
+    " #         CircleFolding:      Ctrl+C              #\n" \
+    " #         PlainFolding:       Ctrl+P              #\n" \
+    " #         Xdbg64 Home:        Ctrl+W              #\n" \
+    " #         Irc:                Ctrl+I              #\n" \
+    " #         X64dbgPythonGit:    Ctrl+G              #\n" \
+    " #         Author:             Ctrl+B              #\n" \
+    " ###################################################\n" \
+    " #              X64dbg python Editor               #\n" \
+    " ###################################################\n"
+
+
 import sys
 import re
 import os
@@ -6,8 +29,10 @@ from os import path
 import sys
 dn = os.getcwd()
 sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor\\icons')
-apiss = sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor\\')
+sys.path.insert(0, os.getcwd()+r'\\plugins\\X64Dbg_editor')
 sys.path.insert(0, dn)
+apifolder = dn+r'\\plugins\\X64Dbg_editor'
+
 import PyQt4
 from PyQt4 import QtCore, QtGui, Qsci
 from PyQt4.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs, QsciScintillaBase
@@ -34,7 +59,6 @@ except AttributeError:
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
-        os.chdir(dn)
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(640, 480)
         self.vindu = QtGui.QWidget(MainWindow)
@@ -136,12 +160,6 @@ class Ui_MainWindow(object):
         self.toolBar.Action15.setStatusTip("Author")
         self.toolBar.Action15.setShortcut("Ctrl+B")
         self.toolBar.Action15.triggered.connect(self.Author)
-        #pdf
-        #self.toolBar.Action16 = QtGui.QAction(QtGui.QIcon(":/ico/auth.png"),"Author",self.toolBar)
-        #self.toolBar.Action16.setStatusTip("Save to PDF")
-        #self.toolBar.Action16.setShortcut("Ctrl+8")
-        #self.toolBar.Action16.triggered.connect(self.filePrintPdf)
-
         #actions
         self.toolBar.addAction(self.toolBar.newAction)
         self.toolBar.addSeparator()
@@ -173,22 +191,21 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.toolBar.Action15)
         #self.toolBar.addSeparator()
         #self.toolBar.addAction(self.toolBar.Action16)
-
         #font
         skrift = QFont()
         skrift.setFamily('Consolas')
         skrift.setFixedPitch(True)
         skrift.setPointSize(12)
         self.codebox.setFont(skrift)
-
-        #python style
         #python style
         lexer = QsciLexerPython(self.codebox)
         #api test not working
         api = Qsci.QsciAPIs(lexer)
-        apidir = str(dn)
-        API_FILE = apidir+r'\python.api'
+        API_FILE = apifolder+'\\python.api'
+        #in case editor is run outside x64dbg
+        API_FILE2 = dn+'\\python.api'
         api.load(API_FILE)
+        api.load(API_FILE2)
         api.prepare()
         self.codebox.setAutoCompletionThreshold(1)
         self.codebox.setAutoCompletionThreshold(6)
