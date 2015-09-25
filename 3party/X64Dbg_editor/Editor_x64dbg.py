@@ -1,4 +1,6 @@
 # Created by Storm Shadow www.techbliss.org
+
+# Created by Storm Shadow www.techbliss.org
 print "##################################################\n" \
     " #              Author Storm Shadow                # \n" \
     " #                   Hotkeys                       # \n" \
@@ -20,6 +22,7 @@ print "##################################################\n" \
     " ###################################################\n" \
     " #              X64dbg python Editor               #\n" \
     " ###################################################\n"
+
 
 
 import sys
@@ -64,6 +67,7 @@ class Ui_MainWindow(object):
         self.vindu = QtGui.QWidget(MainWindow)
         self.vindu.setStyleSheet(_fromUtf8('notusedasyet'))
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        MainWindow.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
         self.filename = ""
         self.vindu.setObjectName(_fromUtf8("vindu"))
