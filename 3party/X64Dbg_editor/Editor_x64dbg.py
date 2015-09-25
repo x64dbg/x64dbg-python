@@ -17,9 +17,6 @@ try:
 except ImportError:
     import icons.ico
 
-
-
-
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -35,14 +32,15 @@ except AttributeError:
         return QtGui.QApplication.translate(context, text, disambig)
 
 
-
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+        os.chdir(dn)
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(640, 480)
         self.vindu = QtGui.QWidget(MainWindow)
         self.vindu.setStyleSheet(_fromUtf8('notusedasyet'))
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
         self.filename = ""
         self.vindu.setObjectName(_fromUtf8("vindu"))
         self.verticalLayout = QtGui.QVBoxLayout(self.vindu)
@@ -313,6 +311,7 @@ class MyWindow(QtGui.QMainWindow):
     we have to ask user for quiting so we can change back to root dir
     '''
     def closeEvent(self,event):
+        os.chdir(dn)
         result = QtGui.QMessageBox.question(self,
                       "Confirm Exit...",
                       "Are you sure you want to exit ?",
@@ -320,7 +319,17 @@ class MyWindow(QtGui.QMainWindow):
         event.ignore()
 
         if result == QtGui.QMessageBox.Yes:
-            event.accept(), os.chdir(dn)
+            print "###################################################\n" \
+                " #              Author Storm Shadow                # \n" \
+                " #                   Thx To                        #\n" \
+                " #                  Tomer Zait                     #\n" \
+                " #                   Mr.Exodia                     #\n" \
+                " #      Follow xdbg64 python project on Github     #\n" \
+                " ###################################################\n" \
+                " #              X64dbg python Editor               #\n" \
+                " ###################################################\n"
+            os.chdir(dn)
+            event.accept()
 
 from PyQt4 import Qsci
 
@@ -329,7 +338,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication.instance()
     if not app:
         app = QtGui.QApplication([])
-    MainWindow = QtGui.QMainWindow()
+    MainWindow = MyWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
