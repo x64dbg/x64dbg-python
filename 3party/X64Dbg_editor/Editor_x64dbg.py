@@ -1,7 +1,7 @@
 # Created by Storm Shadow www.techbliss.org
 
 # Created by Storm Shadow www.techbliss.org
-print "##################################################\n" \
+print " ###################################################\n" \
     " #              Author Storm Shadow                # \n" \
     " #                   Hotkeys                       # \n" \
     " #         NewFile:            Ctrl+N              #\n" \
@@ -340,7 +340,7 @@ class MyWindow(QtGui.QMainWindow):
         event.ignore()
 
         if result == QtGui.QMessageBox.Yes:
-            print "###################################################\n" \
+            print " ###################################################\n" \
                 " #              Author Storm Shadow                # \n" \
                 " #                   Thx To                        #\n" \
                 " #                  Tomer Zait                     #\n" \
