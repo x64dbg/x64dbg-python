@@ -42,7 +42,7 @@ class Ui_MainWindow(object):
         MainWindow.resize(640, 480)
         self.vindu = QtGui.QWidget(MainWindow)
         self.vindu.setStyleSheet(_fromUtf8('notusedasyet'))
-
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
         self.filename = ""
         self.vindu.setObjectName(_fromUtf8("vindu"))
         self.verticalLayout = QtGui.QVBoxLayout(self.vindu)
@@ -237,7 +237,7 @@ class Ui_MainWindow(object):
         if self.filename:
             with open(self.filename,"r") as self.file:
                 self.codebox.setText(self.file.read())
-        os.chdir(str(self.path)), os.chdir(dn)
+        os.chdir(str(self.path))
 
 
 
@@ -248,7 +248,7 @@ class Ui_MainWindow(object):
             )
         if self.filename:
             self.savetext(self.filename)
-        os.chdir(str(self.path)), os.chdir(dn)
+        os.chdir(str(self.path))
 
 
 
@@ -270,7 +270,7 @@ class Ui_MainWindow(object):
         try:
             exec (script, g)
             QtGui.QCloseEvent()
-            os.chdir(dn)
+
 			
         except ImportError:
             os.chdir(str(self.path))
@@ -278,7 +278,7 @@ class Ui_MainWindow(object):
             sys.path.insert(0, str(self.path))
             exec (script, g)
             QtGui.QCloseEvent()
-            os.chdir(dn)
+
 
 
     def nofoldingl(self):
@@ -307,6 +307,20 @@ class Ui_MainWindow(object):
         webbrowser.open('https://twitter.com/zadow28')
 
 
+
+class MyWindow(QtGui.QMainWindow):
+    '''
+    we have to ask user for quiting so we can change back to root dir
+    '''
+    def closeEvent(self,event):
+        result = QtGui.QMessageBox.question(self,
+                      "Confirm Exit...",
+                      "Are you sure you want to exit ?",
+                      QtGui.QMessageBox.Yes| QtGui.QMessageBox.No)
+        event.ignore()
+
+        if result == QtGui.QMessageBox.Yes:
+            event.accept(), os.chdir(dn)
 
 from PyQt4 import Qsci
 
