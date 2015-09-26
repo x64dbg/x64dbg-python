@@ -24,4 +24,8 @@ watch the small video what to do then.
 
 Click picture below to see video!
 
-[![Building and installing x64dbg python](http://i.imgur.com/dfk6QSm.png)](https://www.youtube.com/watch?v=MankLX2UfSY "Building and installing x64dbg python")
+[![Building and installing x64dbg python](http://i.imgur.com/dfk6QSm.png)](https://youtu.be/MankLX2UfSY "Building and installing x64dbg python")
+
+little intro to using python and editor.
+
+[![Using x64dbg python](http://i.imgur.com/MqK46iD.png)](https://youtu.be/CakZZXbhNUc "Using x64dbg python")
