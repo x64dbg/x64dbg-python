@@ -1,6 +1,9 @@
 import sys
+import signal
+import warnings
 import __builtin__
 from os import path
+import multiprocessing
 from pluginsdk import bridgemain, _plugins
 
 
@@ -59,6 +62,12 @@ __builtin__.input = __input
 
 # Set arguments
 sys.argv = [path.join(path.dirname(__file__), '__init__.py')]
+
+setattr(
+    signal, 'signal',
+    lambda *args, **kwargs: warnings.warn('Cannot use signals in x64dbg-python...', UserWarning, stacklevel=2)
+)
+multiprocessing.set_executable(path.join(sys.exec_prefix, 'pythonw.exe'))
 
 # Print Message That The Hooks Worked!
 print '[PYTHON] stdout, stderr, raw_input hooked!'

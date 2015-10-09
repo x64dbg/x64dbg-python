@@ -46,6 +46,12 @@ SCRIPT_EXPORT duint GetMainModuleEntry();
 SCRIPT_EXPORT int GetMainModuleSectionCount();
 SCRIPT_EXPORT bool GetMainModuleName(char* name); //name[MAX_MODULE_SIZE]
 SCRIPT_EXPORT bool GetMainModulePath(char* path); //path[MAX_PATH]
+#ifndef SWIG
+SCRIPT_EXPORT bool SectionListFromAddr(duint addr, ListOf(ModuleSectionInfo) listInfo);
+SCRIPT_EXPORT bool SectionListFromName(const char* name, ListOf(ModuleSectionInfo) listInfo);
+SCRIPT_EXPORT bool GetMainModuleSectionList(ListOf(ModuleSectionInfo) listInfo); //caller has the responsibility to free the list
+SCRIPT_EXPORT bool GetList(ListOf(ModuleInfo) listInfo); //caller has the responsibility to free the list
+#endif
 }; //Module
 }; //Script
 

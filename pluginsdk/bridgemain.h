@@ -7,6 +7,9 @@
 #include <stdbool.h>
 #endif
 
+//list structure (and C++ wrapper)
+#include "bridgelist.h"
+
 //default structure alignments forced
 #ifdef _WIN64
 #pragma pack(push, 16)
@@ -169,7 +172,10 @@ typedef enum
     DBG_GET_STRING_AT,              // param1=duint addr,                param2=unused
     DBG_GET_FUNCTIONS,              // param1=unused,                    param2=unused
     DBG_WIN_EVENT,                  // param1=MSG* message,              param2=long* result
-    DBG_WIN_EVENT_GLOBAL            // param1=MSG* message,              param2=unused
+    DBG_WIN_EVENT_GLOBAL,           // param1=MSG* message,              param2=unused
+    DBG_INITIALIZE_LOCKS,           // param1=unused,                    param2=unused
+    DBG_DEINITIALIZE_LOCKS,         // param1=unused,                    param2=unused
+    DBG_GET_TIME_WASTED_COUNTER     // param1=unused,                    param2=unused
 } DBGMSG;
 
 typedef enum
@@ -686,6 +692,7 @@ BRIDGE_IMPEXP const DBGFUNCTIONS* DbgFunctions();
 BRIDGE_IMPEXP bool DbgWinEvent(MSG* message, long* result);
 BRIDGE_IMPEXP bool DbgWinEventGlobal(MSG* message);
 BRIDGE_IMPEXP bool DbgIsRunning();
+BRIDGE_IMPEXP duint DbgGetTimeWastedCounter();
 
 //Gui defines
 #define GUI_PLUGIN_MENU 0
@@ -767,7 +774,12 @@ typedef enum
     GUI_ADD_QWIDGET_TAB,            // param1=QWidget*,             param2=unused
     GUI_SHOW_QWIDGET_TAB,           // param1=QWidget*,             param2=unused
     GUI_CLOSE_QWIDGET_TAB,          // param1=QWidget*,             param2=unused
-    GUI_EXECUTE_ON_GUI_THREAD       // param1=GUICALLBACK,          param2=unused
+    GUI_EXECUTE_ON_GUI_THREAD,      // param1=GUICALLBACK,          param2=unused
+    GUI_UPDATE_TIME_WASTED_COUNTER, // param1=unused,               param2=unused
+    GUI_SET_GLOBAL_NOTES,           // param1=const char* text,     param2=unused
+    GUI_GET_GLOBAL_NOTES,           // param1=char** text,          param2=unused
+    GUI_SET_DEBUGGEE_NOTES,         // param1=const char* text,     param2=unused
+    GUI_GET_DEBUGGEE_NOTES          // param1=char** text,          param2=unused
 } GUIMSG;
 
 //GUI Typedefs
@@ -852,7 +864,6 @@ BRIDGE_IMPEXP void GuiUpdateSideBar();
 BRIDGE_IMPEXP void GuiRepaintTableView();
 BRIDGE_IMPEXP void GuiUpdatePatches();
 BRIDGE_IMPEXP void GuiUpdateCallStack();
-BRIDGE_IMPEXP void GuiUpdateMemoryView();
 BRIDGE_IMPEXP void GuiLoadSourceFile(const char* path, int line);
 BRIDGE_IMPEXP void GuiMenuSetIcon(int hMenu, const ICONDATA* icon);
 BRIDGE_IMPEXP void GuiMenuSetEntryIcon(int hEntry, const ICONDATA* icon);
@@ -861,6 +872,11 @@ BRIDGE_IMPEXP void GuiAddQWidgetTab(void* qWidget);
 BRIDGE_IMPEXP void GuiShowQWidgetTab(void* qWidget);
 BRIDGE_IMPEXP void GuiCloseQWidgetTab(void* qWidget);
 BRIDGE_IMPEXP void GuiExecuteOnGuiThread(GUICALLBACK cbGuiThread);
+BRIDGE_IMPEXP void GuiUpdateTimeWastedCounter();
+BRIDGE_IMPEXP void GuiSetGlobalNotes(const char* text);
+BRIDGE_IMPEXP void GuiGetGlobalNotes(char** text);
+BRIDGE_IMPEXP void GuiSetDebuggeeNotes(const char* text);
+BRIDGE_IMPEXP void GuiGetDebuggeeNotes(char** text);
 
 #ifdef __cplusplus
 }

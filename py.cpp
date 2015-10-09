@@ -43,6 +43,80 @@ static bool cbPythonCommand(int argc, char* argv[])
     return true;
 }
 
+static PyObject* getCommandArgumets(char* args)
+{
+    PyObject* pShlexModule, *pFunc;
+    PyObject* pKwargs, *pValue;
+
+    pShlexModule = PyImport_Import(PyString_FromString("shlex"));
+    if(pShlexModule == NULL)
+        return NULL;
+
+    pFunc = PyObject_GetAttrString(pShlexModule, "split");
+    if(!pFunc || !PyCallable_Check(pFunc))
+        return NULL;
+
+    pKwargs = Py_BuildValue(
+                  "{s:s, s:N, s:N}",
+                  "s", args,
+                  "comments", Py_False,
+                  "posix", Py_False
+              );
+    pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
+    Py_DECREF(pKwargs);
+    Py_DECREF(pFunc);
+    Py_DECREF(pShlexModule);
+    if(pValue == NULL)
+    {
+        PyErr_PrintEx(0);
+        return NULL;
+    }
+
+    return PyList_GetSlice(pValue, 1, PyList_GET_SIZE(pValue));
+}
+
+static bool cbPipCommand(int argc, char* argv[])
+{
+    PyObject* pPipModule, *pFunc;
+    PyObject* pKwargs, *pArgs, *pValue;
+
+    if(argc < 2)
+    {
+        _plugin_logputs("[PYTHON] Command Example: Pip freeze");
+        return false;
+    }
+
+    // Import pip
+    pPipModule = PyImport_Import(PyString_FromString("pip"));
+    if(pPipModule != NULL)
+    {
+        pFunc = PyObject_GetAttrString(pPipModule, "main");
+        if(pFunc && PyCallable_Check(pFunc))
+        {
+            pArgs = getCommandArgumets(argv[0]);
+            pKwargs = Py_BuildValue("{s:N}", "args", pArgs);
+            pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
+            Py_DECREF(pArgs);
+            Py_DECREF(pKwargs);
+            Py_DECREF(pFunc);
+            if(pValue == NULL)
+            {
+                _plugin_logputs("[PYTHON] Could not use pip main function.");
+                PyErr_PrintEx(0);
+                return false;
+            }
+            Py_DECREF(pValue);
+        }
+        Py_DECREF(pModule);
+    }
+    else
+    {
+        _plugin_logputs("[PYTHON] Could not import pip");
+        PyErr_PrintEx(0);
+    }
+    return true;
+}
+
 static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
 {
     OPENFILENAMEW sOpenFileName = {0};
@@ -565,6 +639,8 @@ void pyInit(PLUG_INITSTRUCT* initStruct)
         _plugin_logputs("[PYTHON] error registering the \"Python\" command!");
     if(!_plugin_registercommand(pluginHandle, "OpenScript", cbOpenScriptCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"OpenScript\" command!");
+    if(!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
+        _plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
 
     // Initialize the python environment
     Py_Initialize();
@@ -595,6 +671,7 @@ void pyStop()
 {
     _plugin_unregistercommand(pluginHandle, "Python");
     _plugin_unregistercommand(pluginHandle, "OpenScript");
+    _plugin_unregistercommand(pluginHandle, "Pip");
 
     _plugin_menuclear(hMenu);
     _plugin_menuclear(hMenuDisasm);

@@ -6,7 +6,7 @@ copy bin\x32\x64dbg-python.dll %PLUGINDIR%\x64dbg_python.dp32
 
 @cd swig
 call "%~dp0\setenv.bat"
-call %VCVARSX86%
+call %VCVARS% x86
 "%PYTHON27X86%\python.exe" setup.py  install --install-lib="%PLUGINDIR%"
 @cd ..
 

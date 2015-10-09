@@ -1,6 +1,6 @@
 import sys
 import runpy
-import os
+# import os
 from os import path
 from ctypes import *
 
@@ -60,12 +60,14 @@ def open_python_file(run_file=False):
         return
 
     if run_file:
-        old_path = os.getcwdu()
-        os.chdir(path.dirname(file_path))
+        # old_path = os.getcwdu()
+        # os.chdir(path.dirname(file_path))
+        sys.path.insert(0, path.dirname(file_path))
         runpy.run_path(
             path_name=file_path,
+            init_globals=globals(),
             run_name='__main__',
         )
-        os.chdir(old_path)
+        # os.chdir(old_path)
 
     return file_path
