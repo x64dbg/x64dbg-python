@@ -7,3 +7,4 @@ from .stack import *
 from .assembler import *
 from .misc import *
 from .module import *
+from .flag import *

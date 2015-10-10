@@ -39,45 +39,14 @@ static bool cbPythonCommand(int argc, char* argv[])
         _plugin_logputs("[PYTHON] Command Example: Python \"print('Hello World')\".");
         return false;
     }
-    PyRun_SimpleString(argv[1]);
+    // size 7 ('python ')
+    PyRun_SimpleString(*argv + 7);
     return true;
-}
-
-static PyObject* getCommandArgumets(char* args)
-{
-    PyObject* pShlexModule, *pFunc;
-    PyObject* pKwargs, *pValue;
-
-    pShlexModule = PyImport_Import(PyString_FromString("shlex"));
-    if(pShlexModule == NULL)
-        return NULL;
-
-    pFunc = PyObject_GetAttrString(pShlexModule, "split");
-    if(!pFunc || !PyCallable_Check(pFunc))
-        return NULL;
-
-    pKwargs = Py_BuildValue(
-                  "{s:s, s:N, s:N}",
-                  "s", args,
-                  "comments", Py_False,
-                  "posix", Py_False
-              );
-    pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-    Py_DECREF(pKwargs);
-    Py_DECREF(pFunc);
-    Py_DECREF(pShlexModule);
-    if(pValue == NULL)
-    {
-        PyErr_PrintEx(0);
-        return NULL;
-    }
-
-    return PyList_GetSlice(pValue, 1, PyList_GET_SIZE(pValue));
 }
 
 static bool cbPipCommand(int argc, char* argv[])
 {
-    PyObject* pPipModule, *pFunc;
+    PyObject* pUtilsModule, *pFunc;
     PyObject* pKwargs, *pArgs, *pValue;
 
     if(argc < 2)
@@ -86,33 +55,29 @@ static bool cbPipCommand(int argc, char* argv[])
         return false;
     }
 
-    // Import pip
-    pPipModule = PyImport_Import(PyString_FromString("pip"));
-    if(pPipModule != NULL)
+    // Import utils
+    pUtilsModule = PyObject_GetAttrString(pModule, "utils");
+    if(pEventObject == NULL)
     {
-        pFunc = PyObject_GetAttrString(pPipModule, "main");
-        if(pFunc && PyCallable_Check(pFunc))
-        {
-            pArgs = getCommandArgumets(argv[0]);
-            pKwargs = Py_BuildValue("{s:N}", "args", pArgs);
-            pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-            Py_DECREF(pArgs);
-            Py_DECREF(pKwargs);
-            Py_DECREF(pFunc);
-            if(pValue == NULL)
-            {
-                _plugin_logputs("[PYTHON] Could not use pip main function.");
-                PyErr_PrintEx(0);
-                return false;
-            }
-            Py_DECREF(pValue);
-        }
-        Py_DECREF(pModule);
-    }
-    else
-    {
-        _plugin_logputs("[PYTHON] Could not import pip");
+        _plugin_logputs("[PYTHON] Could not find utils package.");
         PyErr_PrintEx(0);
+        return false;
+    }
+
+    pFunc = PyObject_GetAttrString(pUtilsModule, "x64dbg_pip");
+    if(pFunc && PyCallable_Check(pFunc))
+    {
+        pKwargs = Py_BuildValue("{s:s}", "args", argv[0]);
+        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
+        Py_DECREF(pKwargs);
+        Py_DECREF(pFunc);
+        if(pValue == NULL)
+        {
+            _plugin_logputs("[PYTHON] Could not use x64dbg_pip function.");
+            PyErr_PrintEx(0);
+            return false;
+        }
+        Py_DECREF(pValue);
     }
     return true;
 }

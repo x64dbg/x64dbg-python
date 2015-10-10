@@ -16,3 +16,4 @@
 %include "_scriptapi_stack.i"
 %include "_scriptapi_assembler.i"
 %include "_scriptapi_module.i"
+%include "_scriptapi_flag.i"

@@ -5,6 +5,8 @@ import hooks
 import pluginsdk
 import __registers
 import __events
+import __flags
 
 Register = __registers.Register()
 Event = __events.Event()
+Flag = __flags.Flag()

@@ -1,6 +1,6 @@
 import functools
 from utils import is_64bit
-from pluginsdk import _scriptapi
+import pluginsdk._scriptapi
 from pluginsdk.bridgemain import GuiUpdateAllViews
 
 
@@ -58,7 +58,7 @@ class Register(object):
             ))
 
         return getattr(
-            _scriptapi,
+            pluginsdk._scriptapi.register,
             '{method}{register}'.format(
                 method='Get' if get else 'Set',
                 register=register_name

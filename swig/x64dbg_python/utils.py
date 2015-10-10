@@ -1,6 +1,7 @@
 import sys
 import runpy
-# import os
+import shlex
+import os
 from os import path
 from ctypes import *
 
@@ -60,14 +61,26 @@ def open_python_file(run_file=False):
         return
 
     if run_file:
-        # old_path = os.getcwdu()
-        # os.chdir(path.dirname(file_path))
         sys.path.insert(0, path.dirname(file_path))
         runpy.run_path(
             path_name=file_path,
             init_globals=globals(),
             run_name='__main__',
         )
-        # os.chdir(old_path)
 
     return file_path
+
+
+def get_plugins_dir():
+    current_dir = path.dirname(__file__)
+    return path.dirname(current_dir)
+
+
+def x64dbg_pip(args=list()):
+    try:
+        import pip
+        # Split arguments
+        arg_list = shlex.split(args, comments=False, posix=False)
+        return pip.main(args=arg_list[1:])
+    except ImportError:
+        print "Pip is not installed: Please install pip from 'https://pip.readthedocs.org/en/stable/installing/'"

@@ -15,6 +15,10 @@ def __input(prompt=''):
     return eval(__raw_input(prompt))
 
 
+def __signal(sig, action):
+    warnings.warn('Cannot use signals in x64dbg-python...', UserWarning, stacklevel=2)
+
+
 class OutputHook(object):
     def __init__(self, stream_name='stdout', callback=_plugins._plugin_logprintf):
         self.is_hooking = False
@@ -57,16 +61,19 @@ STDERR_HOOK = OutputHook('stderr')
 STDERR_HOOK.start()
 
 # Hook raw_input, input (stdin)
-__builtin__.raw_input = __raw_input
-__builtin__.input = __input
+setattr(__builtin__, 'original_raw_input', __builtin__.raw_input)
+setattr(__builtin__, 'raw_input', __raw_input)
+setattr(__builtin__, 'original_input', __builtin__.input)
+setattr(__builtin__, 'input', __input)
 
 # Set arguments
 sys.argv = [path.join(path.dirname(__file__), '__init__.py')]
 
-setattr(
-    signal, 'signal',
-    lambda *args, **kwargs: warnings.warn('Cannot use signals in x64dbg-python...', UserWarning, stacklevel=2)
-)
+# Hook Signals (for pip and other signal based programs)
+setattr(signal, 'original_signal', signal.signal)
+setattr(signal, 'signal', __signal)
+
+# Fix Multiprocessing (Will not be able to use x64dbg_python lib for now...)
 multiprocessing.set_executable(path.join(sys.exec_prefix, 'pythonw.exe'))
 
 # Print Message That The Hooks Worked!
