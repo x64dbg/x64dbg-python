@@ -1,7 +1,6 @@
 import sys
 import runpy
 import shlex
-import os
 from os import path
 from ctypes import *
 

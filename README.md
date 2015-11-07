@@ -1,8 +1,8 @@
 # x64dbg-python
 Automating x64dbg using Python
 
-Works with: snapshot_2015-09-22_01-30
-http://sourceforge.net/projects/x64dbg/files/snapshots/snapshot_2015-09-22_01-30.7z/download
+Works with: snapshot_2015-11-07_04-08
+http://sourceforge.net/projects/x64dbg/files/snapshots/snapshot_2015-11-07_04-08.7z/download
 
 
 ### To develop you will need:
