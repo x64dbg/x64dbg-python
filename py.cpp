@@ -39,8 +39,7 @@ static bool cbPythonCommand(int argc, char* argv[])
         _plugin_logputs("[PYTHON] Command Example: Python \"print('Hello World')\".");
         return false;
     }
-    // size 7 ('python ')
-    PyRun_SimpleString(*argv + 7);
+    PyRun_SimpleString(argv[1]);
     return true;
 }
 
@@ -137,6 +136,16 @@ static bool cbOpenScriptCommand(int argc, char* argv[])
 {
     GuiExecuteOnGuiThread(OpenScript);
     return true;
+}
+
+static bool cbPythonCommandType(const char* cmd)
+{
+    if(cmd)
+    {
+        PyRun_SimpleString(cmd);
+        return true;
+    }
+    return false;
 }
 
 static void cbWinEventCallback(CBTYPE cbType, void* info)
@@ -597,9 +606,18 @@ static void cbStopDebugCallback(CBTYPE cbType, void* info)
     }
 }
 
+
 void pyInit(PLUG_INITSTRUCT* initStruct)
 {
     _plugin_logprintf("[PYTHON] pluginHandle: %d\n", pluginHandle);
+
+    SCRIPTTYPEINFO info;
+    strcpy_s(info.name, "Python");
+    info.id = 0;
+    info.execute = cbPythonCommandType;
+    info.completeCommand = nullptr;
+    GuiRegisterScriptLanguage(&info);
+
     if(!_plugin_registercommand(pluginHandle, "Python", cbPythonCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"Python\" command!");
     if(!_plugin_registercommand(pluginHandle, "OpenScript", cbOpenScriptCommand, false))
@@ -634,7 +652,6 @@ void pyInit(PLUG_INITSTRUCT* initStruct)
 
 void pyStop()
 {
-    _plugin_unregistercommand(pluginHandle, "Python");
     _plugin_unregistercommand(pluginHandle, "OpenScript");
     _plugin_unregistercommand(pluginHandle, "Pip");
 

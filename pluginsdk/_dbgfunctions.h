@@ -49,7 +49,7 @@ typedef bool (*PATCHRESTORE)(duint addr);
 typedef int (*PATCHFILE)(DBGPATCHINFO* patchlist, int count, const char* szFileName, char* error);
 typedef int (*MODPATHFROMADDR)(duint addr, char* path, int size);
 typedef int (*MODPATHFROMNAME)(const char* modname, char* path, int size);
-typedef bool (*DISASMFAST)(unsigned char* data, duint addr, BASIC_INSTRUCTION_INFO* basicinfo);
+typedef bool (*DISASMFAST)(const unsigned char* data, duint addr, BASIC_INSTRUCTION_INFO* basicinfo);
 typedef void (*MEMUPDATEMAP)();
 typedef void (*GETCALLSTACK)(DBGCALLSTACK* callstack);
 typedef void (*SYMBOLDOWNLOADALLSYMBOLS)(const char* szSymbolStore);
@@ -68,6 +68,7 @@ typedef duint (*VATOFILEOFFSET)(duint va);
 typedef duint (*GETADDRFROMLINE)(const char* szSourceFile, int line);
 typedef bool (*GETSOURCEFROMADDR)(duint addr, char* szSourceFile, int* line);
 typedef bool (*VALFROMSTRING)(const char* string, duint* value);
+typedef bool(*PATCHGETEX)(duint addr, DBGPATCHINFO* info);
 
 typedef struct DBGFUNCTIONS_
 {
@@ -106,6 +107,7 @@ typedef struct DBGFUNCTIONS_
     GETADDRFROMLINE GetAddrFromLine;
     GETSOURCEFROMADDR GetSourceFromAddr;
     VALFROMSTRING ValFromString;
+    PATCHGETEX PatchGetEx;
 } DBGFUNCTIONS;
 
 #ifdef BUILD_DBG

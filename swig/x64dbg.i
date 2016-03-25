@@ -3,6 +3,9 @@
 // bridgemain.h
 %include "bridgemain.i"
 
+// bridgelist.h
+%include "bridgelist.i"
+
 // _plugins.h
 %include "_plugins.i"
 
