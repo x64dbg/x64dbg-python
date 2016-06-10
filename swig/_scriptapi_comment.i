@@ -8,7 +8,6 @@
 %rename(Comment_GetInfo) Script::Comment::GetInfo;
 %rename(Comment_Delete) Script::Comment::Delete;
 %rename(Comment_DeleteRange) Script::Comment::DeleteRange;
-%rename(Comment_DeleteRange) Script::Comment::DeleteRange;
 %rename(Comment_Clear) Script::Comment::Clear;
 %rename(Comment_GetList) Script::Comment::GetList;
 
