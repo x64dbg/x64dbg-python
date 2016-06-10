@@ -7,6 +7,8 @@
 %include <windows.i>
 %include "..\pluginsdk\_scriptapi.h"
 
+%include "_scriptapi_argument.i"
+%include "_scriptapi_bookmark.i"
 %include "_scriptapi_comment.i"
 %include "_scriptapi_debug.i"
 %include "_scriptapi_memory.i"

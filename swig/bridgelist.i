@@ -9,7 +9,7 @@
 
 %define %ListInfo_func(TYPE,NAME)
 
-%template(vector##Type) std::vector<TYPE>;
+%template(vector##NAME) std::vector<TYPE>;
 
 %inline %{
 std::vector<TYPE> NAME(ListInfo* l)
