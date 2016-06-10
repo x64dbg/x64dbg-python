@@ -1,3 +1,4 @@
+from .comment import *
 from .debug import *
 from .memory import *
 from .register import *
