@@ -1,6 +1,18 @@
 from .. import x64dbg
 
 
+class FlagEnum:
+    ZF = x64dbg.ZF
+    OF = x64dbg.OF
+    CF = x64dbg.CF
+    PF = x64dbg.PF
+    SF = x64dbg.SF
+    TF = x64dbg.TF
+    AF = x64dbg.AF
+    DF = x64dbg.DF
+    IF = x64dbg.IF
+
+
 def Flag_Get(flag):
     return x64dbg.Flag_Get(flag)
 

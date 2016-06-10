@@ -2,6 +2,7 @@ from .argument import *
 from .bookmark import *
 from .comment import *
 from .debug import *
+from .function import *
 from .memory import *
 from .register import *
 from .gui import *
