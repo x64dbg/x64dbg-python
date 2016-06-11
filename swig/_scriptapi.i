@@ -13,6 +13,7 @@
 %include "_scriptapi_debug.i"
 %include "_scriptapi_function.i"
 %include "_scriptapi_label.i"
+%include "_scriptapi_symbol.i"
 %include "_scriptapi_memory.i"
 %include "_scriptapi_register.i"
 %include "_scriptapi_pattern.i"

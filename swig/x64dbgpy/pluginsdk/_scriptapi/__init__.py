@@ -4,6 +4,7 @@ from .comment import *
 from .debug import *
 from .function import *
 from .label import *
+from .symbol import *
 from .memory import *
 from .register import *
 from .gui import *
