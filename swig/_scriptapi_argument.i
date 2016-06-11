@@ -12,6 +12,10 @@
 %rename(Argument_Clear) Script::Argument::Clear;
 %rename(Argument_GetList) Script::Argument::GetList;
 
+%apply duint *INOUT { duint *start };
+%apply duint *INOUT { duint *end };
+%apply duint *INOUT { duint *instructionCount };
+
 %include "..\pluginsdk\_scriptapi_argument.h"
 
 %ListInfo_func(Script::Argument::ArgumentInfo,GetArgumentInfoList)

@@ -9,7 +9,7 @@ def AddInfo(info):
     return x64dbg.Function_Add(info)
 
 def Get(addr):
-    res, start, end, instructionCount = x64dbg.Function_Get(addr)
+    res, start, end, instructionCount = x64dbg.Function_Get(addr, 0, 0, 0)
     return start, end, instructionCount if res else None
 
 def GetInfo(addr):

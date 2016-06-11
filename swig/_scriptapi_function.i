@@ -12,6 +12,10 @@
 %rename(Function_Clear) Script::Function::Clear;
 %rename(Function_GetList) Script::Function::GetList;
 
+%apply duint *INOUT { duint *start };
+%apply duint *INOUT { duint *end };
+%apply duint *INOUT { duint *instructionCount };
+
 %include "..\pluginsdk\_scriptapi_function.h"
 
 %ListInfo_func(Script::Function::FunctionInfo,GetFunctionInfoList)
