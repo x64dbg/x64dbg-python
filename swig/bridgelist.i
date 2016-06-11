@@ -17,6 +17,7 @@ std::vector<TYPE> NAME(ListInfo* l)
     std::vector<TYPE> vec(
         (TYPE*)l->data,
         (TYPE*)((byte*)l->data + l->size));
+    BridgeFree(l->data);
     return vec;
 }
 %}
