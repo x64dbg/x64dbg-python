@@ -43,8 +43,8 @@ extern "C"
 #define DBG_VERSION 25
 
 //Bridge functions
-BRIDGE_IMPEXP const char* BridgeInit();
-BRIDGE_IMPEXP const char* BridgeStart();
+BRIDGE_IMPEXP const wchar_t* BridgeInit();
+BRIDGE_IMPEXP const wchar_t* BridgeStart();
 BRIDGE_IMPEXP void* BridgeAlloc(size_t size);
 BRIDGE_IMPEXP void BridgeFree(void* ptr);
 BRIDGE_IMPEXP bool BridgeSettingGet(const char* section, const char* key, char* value);
@@ -59,8 +59,10 @@ BRIDGE_IMPEXP int BridgeGetDbgVersion();
 #define MAX_LABEL_SIZE 256
 #define MAX_COMMENT_SIZE 512
 #define MAX_MODULE_SIZE 256
-#define MAX_IMPORT_SIZE 256
+#define MAX_IMPORT_SIZE 65536
 #define MAX_BREAKPOINT_SIZE 256
+#define MAX_CONDITIONAL_EXPR_SIZE 256
+#define MAX_CONDITIONAL_TEXT_SIZE 256
 #define MAX_SCRIPT_LINE_SIZE 2048
 #define MAX_THREAD_NAME_SIZE 256
 #define MAX_STRING_SIZE 512
@@ -98,7 +100,8 @@ typedef enum
     flagcomment = 4,
     flagbookmark = 8,
     flagfunction = 16,
-    flagloop = 32
+    flagloop = 32,
+    flagargs = 64
 } ADDRINFOFLAGS;
 
 typedef enum
@@ -127,12 +130,22 @@ typedef enum
     LOOP_END
 } LOOPTYPE;
 
+//order by most important type last
+typedef enum
+{
+    XREF_NONE,
+    XREF_DATA,
+    XREF_JMP,
+    XREF_CALL
+} XREFTYPE;
+
 typedef enum
 {
     ARG_NONE,
     ARG_BEGIN,
     ARG_MIDDLE,
-    ARG_END
+    ARG_END,
+    ARG_SINGLE
 } ARGTYPE;
 
 typedef enum
@@ -186,6 +199,21 @@ typedef enum
     DBG_DELETE_COMMENT_RANGE,       // param1=duint start,               param2=duint end
     DBG_DELETE_LABEL_RANGE,         // param1=duint start,               param2=duint end
     DBG_DELETE_BOOKMARK_RANGE,      // param1=duint start,               param2=duint end
+    DBG_GET_XREF_COUNT_AT,          // param1=duint addr,                param2=unused
+    DBG_GET_XREF_TYPE_AT,           // param1=duint addr,                param2=unused
+    DBG_XREF_ADD,                   // param1=duint addr,                param2=duint from
+    DBG_XREF_DEL_ALL,               // param1=duint addr,                param2=unused
+    DBG_XREF_GET,                   // param1=duint addr,                param2=XREF_INFO* info
+    DBG_GET_ENCODE_TYPE_BUFFER,     // param1=duint addr,                param2=unused
+    DBG_ENCODE_TYPE_GET,            // param1=duint addr,                param2=duint size
+    DBG_DELETE_ENCODE_TYPE_RANGE,   // param1=duint start,               param2=duint end
+    DBG_ENCODE_SIZE_GET,            // param1=duint addr,                param2=duint codesize
+    DBG_DELETE_ENCODE_TYPE_SEG,     // param1=duint addr,                param2=unused
+    DBG_RELEASE_ENCODE_TYPE_BUFFER, // param1=void* buffer,              param2=unused
+    DBG_ARGUMENT_GET,               // param1=FUNCTION* info,            param2=unused
+    DBG_ARGUMENT_OVERLAPS,          // param1=FUNCTION* info,            param2=unused
+    DBG_ARGUMENT_ADD,               // param1=FUNCTION* info,            param2=unused
+    DBG_ARGUMENT_DEL,               // param1=FUNCTION* info,            param2=unused
 } DBGMSG;
 
 typedef enum
@@ -291,6 +319,30 @@ typedef enum
     size_qword = 8
 } MEMORY_SIZE;
 
+typedef enum
+{
+    enc_unknown,  //must be 0
+    enc_byte,     //1 byte
+    enc_word,     //2 bytes
+    enc_dword,    //4 bytes
+    enc_fword,    //6 bytes
+    enc_qword,    //8 bytes
+    enc_tbyte,    //10 bytes
+    enc_oword,    //16 bytes
+    enc_mmword,   //8 bytes
+    enc_xmmword,  //16 bytes
+    enc_ymmword,  //32 bytes
+    enc_zmmword,  //64 bytes avx512 not supported
+    enc_real4,    //4 byte float
+    enc_real8,    //8 byte double
+    enc_real10,   //10 byte decimal
+    enc_ascii,    //ascii sequence
+    enc_unicode,  //unicode sequence
+    enc_code,     //start of code
+    enc_junk,     //junk code
+    enc_middle    //middle of data
+} ENCODETYPE;
+
 //Debugger typedefs
 typedef MEMORY_SIZE VALUE_SIZE;
 typedef struct SYMBOLINFO_ SYMBOLINFO;
@@ -321,6 +373,14 @@ typedef struct
     char name[MAX_BREAKPOINT_SIZE];
     char mod[MAX_MODULE_SIZE];
     unsigned short slot;
+    // extended part
+    unsigned int hitCount;
+    bool fastResume;
+    char breakCondition[MAX_CONDITIONAL_EXPR_SIZE];
+    char logText[MAX_CONDITIONAL_TEXT_SIZE];
+    char logCondition[MAX_CONDITIONAL_EXPR_SIZE];
+    char commandText[MAX_CONDITIONAL_TEXT_SIZE];
+    char commandCondition[MAX_CONDITIONAL_EXPR_SIZE];
 } BRIDGEBP;
 
 typedef struct
@@ -343,6 +403,7 @@ typedef struct
     duint end; //OUT
 } LOOP;
 
+#ifndef _NO_ADDRINFO
 typedef struct
 {
     int flags; //ADDRINFOFLAGS (IN)
@@ -352,7 +413,9 @@ typedef struct
     bool isbookmark;
     FUNCTION function;
     LOOP loop;
+    FUNCTION args;
 } ADDRINFO;
+#endif
 
 struct SYMBOLINFO_
 {
@@ -524,7 +587,7 @@ typedef struct
 typedef struct
 {
     DWORD code;
-    const char* name;
+    char name[128];
 } LASTERROR;
 
 typedef struct
@@ -541,12 +604,12 @@ typedef struct
 
 typedef struct
 {
-    DISASM_ARGTYPE type;
+    DISASM_ARGTYPE type; //normal/memory
     SEGMENTREG segment;
     char mnemonic[64];
-    duint constant;
-    duint value;
-    duint memvalue;
+    duint constant; //constant in the instruction (imm/disp)
+    duint value; //equal to constant or equal to the register value
+    duint memvalue; //memsize:[value]
 } DISASM_ARG;
 
 typedef struct
@@ -637,6 +700,18 @@ typedef struct
     int depth;
 } FUNCTION_LOOP_INFO;
 
+typedef struct
+{
+    duint addr;
+    XREFTYPE type;
+} XREF_RECORD;
+
+typedef struct
+{
+    duint refcount;
+    XREF_RECORD* references;
+} XREF_INFO;
+
 //Debugger functions
 BRIDGE_IMPEXP const char* DbgInit();
 BRIDGE_IMPEXP void DbgExit();
@@ -694,10 +769,19 @@ BRIDGE_IMPEXP bool DbgFunctionGet(duint addr, duint* start, duint* end);
 BRIDGE_IMPEXP bool DbgFunctionOverlaps(duint start, duint end);
 BRIDGE_IMPEXP bool DbgFunctionAdd(duint start, duint end);
 BRIDGE_IMPEXP bool DbgFunctionDel(duint addr);
+BRIDGE_IMPEXP bool DbgArgumentGet(duint addr, duint* start, duint* end);
+BRIDGE_IMPEXP bool DbgArgumentOverlaps(duint start, duint end);
+BRIDGE_IMPEXP bool DbgArgumentAdd(duint start, duint end);
+BRIDGE_IMPEXP bool DbgArgumentDel(duint addr);
 BRIDGE_IMPEXP bool DbgLoopGet(int depth, duint addr, duint* start, duint* end);
 BRIDGE_IMPEXP bool DbgLoopOverlaps(int depth, duint start, duint end);
 BRIDGE_IMPEXP bool DbgLoopAdd(duint start, duint end);
 BRIDGE_IMPEXP bool DbgLoopDel(int depth, duint addr);
+BRIDGE_IMPEXP bool DbgXrefAdd(duint addr, duint from);
+BRIDGE_IMPEXP bool DbgXrefDelAll(duint addr);
+BRIDGE_IMPEXP bool DbgXrefGet(duint addr, XREF_INFO* info);
+BRIDGE_IMPEXP size_t DbgGetXrefCountAt(duint addr);
+BRIDGE_IMPEXP XREFTYPE DbgGetXrefTypeAt(duint addr);
 BRIDGE_IMPEXP bool DbgIsRunLocked();
 BRIDGE_IMPEXP bool DbgIsBpDisabled(duint addr);
 BRIDGE_IMPEXP bool DbgSetAutoCommentAt(duint addr, const char* text);
@@ -715,6 +799,13 @@ BRIDGE_IMPEXP bool DbgWinEventGlobal(MSG* message);
 BRIDGE_IMPEXP bool DbgIsRunning();
 BRIDGE_IMPEXP duint DbgGetTimeWastedCounter();
 BRIDGE_IMPEXP ARGTYPE DbgGetArgTypeAt(duint addr);
+BRIDGE_IMPEXP void* DbgGetEncodeTypeBuffer(duint addr);
+BRIDGE_IMPEXP void DbgReleaseEncodeTypeBuffer(void* buffer);
+BRIDGE_IMPEXP ENCODETYPE DbgGetEncodeTypeAt(duint addr, duint size);
+BRIDGE_IMPEXP duint DbgGetEncodeSizeAt(duint addr, duint codesize);
+BRIDGE_IMPEXP bool DbgSetEncodeType(duint addr, duint size, ENCODETYPE type);
+BRIDGE_IMPEXP void DbgDelEncodeTypeRange(duint start, duint end);
+BRIDGE_IMPEXP void DbgDelEncodeTypeSegment(duint start);
 
 //Gui defines
 #define GUI_PLUGIN_MENU 0
@@ -787,6 +878,7 @@ typedef enum
     GUI_REPAINT_TABLE_VIEW,         // param1=unused,               param2=unused
     GUI_UPDATE_PATCHES,             // param1=unused,               param2=unused
     GUI_UPDATE_CALLSTACK,           // param1=unused,               param2=unused
+    GUI_UPDATE_SEHCHAIN,            // param1=unused,               param2=unused
     GUI_SYMBOL_REFRESH_CURRENT,     // param1=unused,               param2=unused
     GUI_UPDATE_MEMORY_VIEW,         // param1=unused,               param2=unused
     GUI_REF_INITIALIZE,             // param1=const char* name,     param2=unused
@@ -806,7 +898,9 @@ typedef enum
     GUI_DUMP_AT_N,                  // param1=int index,            param2=duint va
     GUI_DISPLAY_WARNING,            // param1=const char *text,     param2=unused
     GUI_REGISTER_SCRIPT_LANG,       // param1=SCRIPTTYPEINFO* info, param2=unused
-    GUI_UNREGISTER_SCRIPT_LANG      // param1=int id,               param2=unused
+    GUI_UNREGISTER_SCRIPT_LANG,     // param1=int id,               param2=unused
+    GUI_UPDATE_ARGUMENT_VIEW,       // param1=unused,               param2=unused
+    GUI_FOCUS_VIEW,                 // param1=int hWindow,          param2=unused
 } GUIMSG;
 
 //GUI Typedefs
@@ -843,6 +937,7 @@ typedef struct
 } SCRIPTTYPEINFO;
 
 //GUI functions
+//code page is utf8
 BRIDGE_IMPEXP void GuiDisasmAt(duint addr, duint cip);
 BRIDGE_IMPEXP void GuiSetDebugState(DBGSTATE state);
 BRIDGE_IMPEXP void GuiAddLogMessage(const char* msg);
@@ -902,6 +997,7 @@ BRIDGE_IMPEXP void GuiUpdateSideBar();
 BRIDGE_IMPEXP void GuiRepaintTableView();
 BRIDGE_IMPEXP void GuiUpdatePatches();
 BRIDGE_IMPEXP void GuiUpdateCallStack();
+BRIDGE_IMPEXP void GuiUpdateSEHChain();
 BRIDGE_IMPEXP void GuiLoadSourceFile(const char* path, int line);
 BRIDGE_IMPEXP void GuiMenuSetIcon(int hMenu, const ICONDATA* icon);
 BRIDGE_IMPEXP void GuiMenuSetEntryIcon(int hEntry, const ICONDATA* icon);
@@ -919,6 +1015,11 @@ BRIDGE_IMPEXP void GuiDumpAtN(duint va, int index);
 BRIDGE_IMPEXP void GuiDisplayWarning(const char* title, const char* text);
 BRIDGE_IMPEXP void GuiRegisterScriptLanguage(SCRIPTTYPEINFO* info);
 BRIDGE_IMPEXP void GuiUnregisterScriptLanguage(int id);
+BRIDGE_IMPEXP void GuiUpdateArgumentWidget();
+BRIDGE_IMPEXP void GuiFocusView(int hWindow);
+BRIDGE_IMPEXP bool GuiIsUpdateDisabled();
+BRIDGE_IMPEXP void GuiUpdateEnable(bool updateNow);
+BRIDGE_IMPEXP void GuiUpdateDisable();
 
 #ifdef __cplusplus
 }

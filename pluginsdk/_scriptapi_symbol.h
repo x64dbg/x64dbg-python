@@ -5,26 +5,26 @@
 
 namespace Script
 {
-namespace Symbol
-{
-enum SymbolType
-{
-    Function,
-    Import,
-    Export
-};
+    namespace Symbol
+    {
+        enum SymbolType
+        {
+            Function,
+            Import,
+            Export
+        };
 
-struct SymbolInfo
-{
-    char mod[MAX_MODULE_SIZE];
-    duint rva;
-    char name[MAX_LABEL_SIZE];
-    bool manual;
-    SymbolType type;
-};
+        struct SymbolInfo
+        {
+            char mod[MAX_MODULE_SIZE];
+            duint rva;
+            char name[MAX_LABEL_SIZE];
+            bool manual;
+            SymbolType type;
+        };
 
-SCRIPT_EXPORT bool GetList(ListOf(SymbolInfo) list); //caller has the responsibility to free the list
-}; //Symbol
+        SCRIPT_EXPORT bool GetList(ListOf(SymbolInfo) list); //caller has the responsibility to free the list
+    }; //Symbol
 }; //Script
 
 #endif //_SCRIPTAPI_SYMBOL_H

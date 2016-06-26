@@ -32,7 +32,7 @@ setup(
                    '-outdir', r'x64dbg_python\pluginsdk',
                    '-D"_WIN64"' if is_64bit() else ''],
         language='c++',
-        include_dirs=[r'..\pluginsdk'],
+        include_dirs=[r'..\pluginsdk', r'include'],
         library_dirs=[r'..\pluginsdk'],
         libraries=['x64bridge', 'x64dbg'] if is_64bit() else ['x32bridge', 'x32dbg'],
         extra_compile_args=['/EHsc'],
