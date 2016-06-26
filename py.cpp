@@ -139,7 +139,6 @@ static bool ExecutePythonScript(wchar_t* szFileName)
         Py_DECREF(f);
     }
 
-    Py_InspectFlag = 1;
     auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
     Py_DECREF(dict);
     Py_DECREF(PyFileObject);
@@ -744,6 +743,7 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 
     // Initialize threads & python interpreter
     PyEval_InitThreads();
+    Py_InspectFlag = 1;
     Py_InitializeEx(0);
 
     // Add 'plugins' (current directory) to sys.path
@@ -812,7 +812,7 @@ void pySetup()
     _plugin_menuseticon(hMenu, &pyIcon);
 
     FreeResource(hMem);
-    _plugin_menuaddentry(hMenu, MENU_OPEN, "&OpenScript...\tALT+F7");
+    _plugin_menuaddentry(hMenu, MENU_OPEN, "&Open Script...\tAlt+F7");
     _plugin_menuaddentry(hMenu, MENU_ABOUT, "&About");
 
     // Set Callbacks
