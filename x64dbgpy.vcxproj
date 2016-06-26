@@ -90,14 +90,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="x64dbg-python.rc" />
+    <ResourceCompile Include="x64dbgpy.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\python.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>x64dbg-python</ProjectName>
+    <ProjectName>x64dbgpy</ProjectName>
     <ProjectGuid>{E7BA66E1-677E-D937-AC50-73AB6ADA89E0}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -126,7 +126,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\x32\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <TargetName>x64dbg-python</TargetName>
+    <TargetName>x64dbgpy</TargetName>
     <TargetExt>.dll</TargetExt>
     <IncludePath>$(Python27x86)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(Python27x86)\libs;$(LibraryPath)</LibraryPath>
@@ -135,7 +135,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\x64\</OutDir>
-    <TargetName>x64dbg-python</TargetName>
+    <TargetName>x64dbgpy</TargetName>
     <TargetExt>.dll</TargetExt>
     <IncludePath>$(Python27x64)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(Python27x64)\libs;$(LibraryPath)</LibraryPath>
@@ -160,7 +160,7 @@
       <Command>install32.bat</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Install x64dbg-python plugin 32bit version</Message>
+      <Message>Install x64dbgpy plugin 32bit version</Message>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -187,7 +187,7 @@
     </Link>
     <PostBuildEvent>
       <Command>install64.bat</Command>
-      <Message>Install x64dbg-python plugin 64bit version</Message>
+      <Message>Install x64dbgpy plugin 64bit version</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

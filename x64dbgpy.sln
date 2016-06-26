@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "x64dbg-python", "x64dbg-python.vcxproj", "{E7BA66E1-677E-D937-AC50-73AB6ADA89E0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "x64dbgpy", "x64dbgpy.vcxproj", "{E7BA66E1-677E-D937-AC50-73AB6ADA89E0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -2,7 +2,7 @@
 
 set PLUGINDIR=%~dp0\release\x64\plugins
 mkdir %PLUGINDIR%
-copy bin\x64\x64dbg-python.dll %PLUGINDIR%\x64dbg_python.dp64
+copy bin\x64\x64dbgpy.dll %PLUGINDIR%\x64dbgpy.dp64
 
 @cd swig
 call clean.bat

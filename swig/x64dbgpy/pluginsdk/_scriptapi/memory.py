@@ -1,4 +1,4 @@
-from x64dbg_python.utils import is_64bit
+from x64dbgpy.utils import is_64bit
 from .. import x64dbg
 
 

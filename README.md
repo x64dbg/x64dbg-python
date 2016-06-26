@@ -1,4 +1,4 @@
-# x64dbg-python
+# x64dbgpy
 
 Automating [x64dbg](http://x64dbg.com) using Python.
 
@@ -36,5 +36,5 @@ Get PyQt5 [here](https://github.com/x64dbg/PyQt5/releases). Video tutorial [here
 
 * I need help with the swig / cpp development,
 * Translating the event callbacks to swig and use it without the code in py.cpp file.
-* Connecting ipython interpreter to x64dbg-python.
-* Python multiprocessing with x64dbg-python plugin (Python embedded).
+* Connecting ipython interpreter to x64dbgpy.
+* Python multiprocessing with x64dbgpy plugin (Python embedded).

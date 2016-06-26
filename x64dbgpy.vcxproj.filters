@@ -253,7 +253,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="x64dbg-python.rc">
+    <ResourceCompile Include="x64dbgpy.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

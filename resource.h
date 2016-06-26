@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by x64dbg-python.rc
+// Used by x64dbgpy.rc
 //
 #define IDB_PNG1                        101
 

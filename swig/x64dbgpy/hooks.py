@@ -16,7 +16,7 @@ def __input(prompt=''):
 
 
 def __signal(sig, action):
-    warnings.warn('Cannot use signals in x64dbg-python...', UserWarning, stacklevel=2)
+    warnings.warn('Cannot use signals in x64dbgpy...', UserWarning, stacklevel=2)
 
 
 class OutputHook(object):
@@ -73,7 +73,7 @@ sys.argv = [path.join(path.dirname(__file__), '__init__.py')]
 setattr(signal, 'original_signal', signal.signal)
 setattr(signal, 'signal', __signal)
 
-# Fix Multiprocessing (Will not be able to use x64dbg_python lib for now...)
+# Fix Multiprocessing (Will not be able to use x64dbgpy lib for now...)
 multiprocessing.set_executable(path.join(sys.exec_prefix, 'pythonw.exe'))
 
 # Print Message That The Hooks Worked!

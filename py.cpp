@@ -9,9 +9,9 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
-#define module_name "x64dbg_python"
+#define module_name "x64dbgpy"
 #define event_object_name "Event"
-#define autorun_directory L"plugins\\x64dbg_python\\autorun"
+#define autorun_directory L"plugins\\x64dbgpy\\autorun"
 // lParam: ScanCode=0x41(ALT), cRepeat=1, fExtended=False, fAltDown=True, fRepeat=False, fUp=False
 #define ALT_F7_SYSKEYDOWN 0x20410001
 
@@ -665,7 +665,7 @@ static bool findX64dbgPythonHome(std::wstring & home)
 {
     //Get from configuration
     char setting[MAX_SETTING_SIZE] = "";
-    if(BridgeSettingGet("x64dbg-python", "PythonHome", setting))
+    if(BridgeSettingGet("x64dbgpy", "PythonHome", setting))
     {
         home = Utf8ToUtf16(setting);
         if(isValidPythonHome(home.c_str()))
@@ -751,7 +751,7 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
     GetShortPathNameW(dir, dir, _countof(dir));
     PyList_Insert(PySys_GetObject("path"), 0, PyString_FromString(Utf16ToUtf8(dir).c_str()));
 
-    // Import x64dbg_python
+    // Import x64dbgpy
     pModule = PyImport_Import(PyString_FromString(module_name));
     if(pModule != NULL)
     {

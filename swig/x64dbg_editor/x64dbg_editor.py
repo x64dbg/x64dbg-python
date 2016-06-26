@@ -366,7 +366,7 @@ class Ui_MainWindow(object):
 
     def gitopen(self):
         import webbrowser
-        webbrowser.open('https://github.com/x64dbg/x64dbg-python')
+        webbrowser.open('https://github.com/x64dbg/x64dbgpy')
 
     def Author(self):
         import webbrowser
