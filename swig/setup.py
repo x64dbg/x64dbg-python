@@ -24,8 +24,13 @@ setup(
         'x64dbg_python',
         'x64dbg_python.pluginsdk',
         'x64dbg_python.pluginsdk._scriptapi',
+        'x64dbg_editor',
+        'x64dbg_editor.icons',
     ],
-    package_data={'x64dbg_python': ['autorun/*']},
+    package_data={
+        'x64dbg_python': ['autorun/*'],
+        'x64dbg_editor': ['python.api']
+    },
     ext_modules=[Extension(
         r'x64dbg_python.pluginsdk._x64dbg', [r'x64dbg.i'],
         swig_opts=['-Wall', '-c++', '-outputtuple',
