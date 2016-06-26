@@ -99,7 +99,6 @@ static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
 
 static bool ExecutePythonScript(wchar_t* szFileName)
 {
-    int status_code;
     String szFileNameA = Utf16ToUtf8(szFileName);
     PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
     if(PyFileObject == NULL)
@@ -109,14 +108,54 @@ static bool ExecutePythonScript(wchar_t* szFileName)
         return false;
     }
 
-    status_code = PyRun_SimpleFile(PyFile_AsFile(PyFileObject), (char*)szFileNameA.c_str());
-    Py_DECREF(PyFileObject);
-    if(status_code != EXIT_SUCCESS)
+    bool local = false;
+
+    PyObject* module, *dict;
+    module = PyImport_AddModule("__main__");
+    dict = PyModule_GetDict(module);
+    if(local)
     {
-        _plugin_logprintf("[PYTHON] Execution failed (status code: %d)....\n", status_code);
-        PyErr_PrintEx(0);
+        dict = PyDict_Copy(dict);
+    }
+    else
+    {
+        Py_INCREF(dict); // avoid to further distinguish between local and global dict
+    }
+
+    if(PyDict_GetItemString(dict, "__file__") == NULL)
+    {
+        PyObject* f = PyString_FromString(szFileNameA.c_str());
+        if(f == NULL)
+        {
+            Py_DECREF(dict);
+            return false;
+        }
+        if(PyDict_SetItemString(dict, "__file__", f) < 0)
+        {
+            Py_DECREF(f);
+            Py_DECREF(dict);
+            return false;
+        }
+        Py_DECREF(f);
+    }
+
+    Py_InspectFlag = 1;
+    auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
+    Py_DECREF(dict);
+    Py_DECREF(PyFileObject);
+
+    __debugbreak();
+
+    if(result == NULL)
+    {
+        if(PyErr_ExceptionMatches(PyExc_SystemExit))
+            _plugin_logprintf("[PYTHON] SystemExit...\n");
+        else
+            _plugin_logprintf("[PYTHON] Exception...\n");
+        PyErr_PrintEx(1);
         return false;
     }
+    Py_DECREF(result);
 
     _plugin_logputs("[PYTHON] Execution is done!");
     return true;
@@ -684,6 +723,12 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
         _plugin_logputs("[PYTHON] error registering the \"OpenScript\" command!");
     if(!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
+    _plugin_registercommand(pluginHandle, "PythonDebug", [](int argc, char* argv[])
+    {
+        Py_DebugFlag = 1;
+        Py_VerboseFlag = 1;
+        return true;
+    }, false);
 
     // Find and set the PythonHome
     std::wstring home;
@@ -701,7 +746,7 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 
     // Initialize threads & python interpreter
     PyEval_InitThreads();
-    Py_Initialize();
+    Py_InitializeEx(0);
 
     // Add 'plugins' (current directory) to sys.path
     GetCurrentDirectoryW(_countof(dir), dir);

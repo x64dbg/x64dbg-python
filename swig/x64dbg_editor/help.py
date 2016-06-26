@@ -1,0 +1,1 @@
+help(pyqt5.qtcore)
