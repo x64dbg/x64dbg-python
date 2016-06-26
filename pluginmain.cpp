@@ -14,8 +14,7 @@ DLL_EXPORT bool pluginit(PLUG_INITSTRUCT* initStruct)
     initStruct->sdkVersion = PLUG_SDKVERSION;
     strcpy(initStruct->pluginName, plugin_name);
     pluginHandle = initStruct->pluginHandle;
-    pyInit(initStruct);
-    return true;
+    return pyInit(initStruct);
 }
 
 DLL_EXPORT bool plugstop()

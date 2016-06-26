@@ -10,7 +10,7 @@ extern HINSTANCE hInst;
 #define MENU_ABOUT 1
 
 //functions
-void pyInit(PLUG_INITSTRUCT* initStruct);
+bool pyInit(PLUG_INITSTRUCT* initStruct);
 void pyStop();
 void pySetup();
 

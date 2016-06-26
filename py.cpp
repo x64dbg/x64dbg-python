@@ -46,7 +46,7 @@ static bool cbPythonCommand(int argc, char* argv[])
 static bool cbPipCommand(int argc, char* argv[])
 {
     PyObject* pUtilsModule, *pFunc;
-    PyObject* pKwargs, *pArgs, *pValue;
+    PyObject* pKwargs, /* *pArgs, */ *pValue;
 
     if(argc < 2)
     {
@@ -606,8 +606,68 @@ static void cbStopDebugCallback(CBTYPE cbType, void* info)
     }
 }
 
+static std::wstring makeX64dbgPackageDir(const std::wstring & directory)
+{
+    auto dir = directory;
+    if(dir[dir.length() - 1] != L'\\')
+        dir.push_back(L'\\');
+    dir.append(L"Lib\\site-packages");
+    return dir;
+}
 
-void pyInit(PLUG_INITSTRUCT* initStruct)
+static bool isValidPythonHome(const wchar_t* directory)
+{
+    if(!directory)
+        return false;
+    auto attr = GetFileAttributesW(makeX64dbgPackageDir(directory).c_str());
+    if(attr == INVALID_FILE_ATTRIBUTES)
+        return false;
+    return (attr & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY;
+}
+
+static bool findX64dbgPythonHome(std::wstring & home)
+{
+    //Get from configuration
+    char setting[MAX_SETTING_SIZE] = "";
+    if(BridgeSettingGet("x64dbg-python", "PythonHome", setting))
+    {
+        home = Utf8ToUtf16(setting);
+        if(isValidPythonHome(home.c_str()))
+        {
+            _plugin_logputs("[PYTHON] Found valid PythonHome in the plugin settings!");
+            return true;
+        }
+        _plugin_logprintf("[PYTHON] Found invalid PythonHome setting \"%s\"...\n", setting);
+    }
+    //Get from environment variable
+#ifdef _WIN64
+    auto python27x = _wgetenv(L"PYTHON27X64");
+#else
+    auto python27x = _wgetenv(L"PYTHON27X86");
+#endif //_WIN64
+    if(isValidPythonHome(python27x))
+    {
+#ifdef _WIN64
+        _plugin_logputs("[PYTHON] Found valid PythonHome in the PYTHON27X64 environment variable!");
+#else
+        _plugin_logputs("[PYTHON] Found valid PythonHome in the PYTHON27X86 environment variable!");
+#endif //_WIN64
+        home = python27x;
+        return true;
+    }
+    auto pythonHome = _wgetenv(L"PYTHONHOME");
+    if(isValidPythonHome(pythonHome))
+    {
+        _plugin_logputs("[PYTHON] Found valid PythonHome in the PYTHONHOME environment variable!");
+        home = pythonHome;
+        return true;
+    }
+    //Get from registry
+    //TODO
+    return false;
+}
+
+bool pyInit(PLUG_INITSTRUCT* initStruct)
 {
     _plugin_logprintf("[PYTHON] pluginHandle: %d\n", pluginHandle);
 
@@ -625,9 +685,28 @@ void pyInit(PLUG_INITSTRUCT* initStruct)
     if(!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
 
-    // Initialize the python environment
-    Py_Initialize();
+    // Find and set the PythonHome
+    std::wstring home;
+    if(!findX64dbgPythonHome(home))
+    {
+        _plugin_logputs("[PYTHON] Failed to find PythonHome (do you have \\Lib\\site-packages?)...");
+        return false;
+    }
+    static wchar_t dir[65536] = L"";
+    GetShortPathNameW(home.c_str(), dir, _countof(dir));
+    static char PythonHomeStatic[65536] = "";
+    strncpy_s(PythonHomeStatic, Utf16ToUtf8(dir).c_str(), _TRUNCATE);
+    _plugin_logprintf("[PYTHON] PythonHome: \"%s\"\n", Utf16ToUtf8(home).c_str());
+    Py_SetPythonHome(PythonHomeStatic);
+
+    // Initialize threads & python interpreter
     PyEval_InitThreads();
+    Py_Initialize();
+
+    // Add 'plugins' (current directory) to sys.path
+    GetCurrentDirectoryW(_countof(dir), dir);
+    GetShortPathNameW(dir, dir, _countof(dir));
+    PyList_Insert(PySys_GetObject("path"), 0, PyString_FromString(Utf16ToUtf8(dir).c_str()));
 
     // Import x64dbg_python
     pModule = PyImport_Import(PyString_FromString(module_name));
@@ -648,6 +727,7 @@ void pyInit(PLUG_INITSTRUCT* initStruct)
     }
 
     PyRun_SimpleString("from " module_name " import *\n");
+    return true;
 }
 
 void pyStop()
