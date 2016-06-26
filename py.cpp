@@ -144,8 +144,6 @@ static bool ExecutePythonScript(wchar_t* szFileName)
     Py_DECREF(dict);
     Py_DECREF(PyFileObject);
 
-    __debugbreak();
-
     if(result == NULL)
     {
         if(PyErr_ExceptionMatches(PyExc_SystemExit))
