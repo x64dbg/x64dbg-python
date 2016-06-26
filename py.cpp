@@ -10,6 +10,8 @@
 #pragma comment(lib, "shlwapi.lib")
 
 #define module_name "x64dbgpy"
+#define token_paste(a, b) token_paste_(a, b)
+#define token_paste_(a, b) a ## b
 #define event_object_name "Event"
 #define autorun_directory L"plugins\\x64dbgpy\\autorun"
 // lParam: ScanCode=0x41(ALT), cRepeat=1, fExtended=False, fAltDown=True, fRepeat=False, fUp=False
@@ -748,7 +750,11 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 
     // Add 'plugins' (current directory) to sys.path
     GetCurrentDirectoryW(_countof(dir), dir);
+    if (dir[wcslen(dir) - 1] != L'\\')
+        wcsncat_s(dir, L"\\", _TRUNCATE);
+    wcsncat_s(dir, token_paste(L, module_name), _TRUNCATE);
     GetShortPathNameW(dir, dir, _countof(dir));
+    _plugin_logputs(Utf16ToUtf8(dir).c_str());
     PyList_Insert(PySys_GetObject("path"), 0, PyString_FromString(Utf16ToUtf8(dir).c_str()));
 
     // Import x64dbgpy
