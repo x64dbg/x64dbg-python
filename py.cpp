@@ -753,7 +753,7 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 
     // Add 'plugins' (current directory) to sys.path
     GetCurrentDirectoryW(_countof(dir), dir);
-    if (dir[wcslen(dir) - 1] != L'\\')
+    if(dir[wcslen(dir) - 1] != L'\\')
         wcsncat_s(dir, L"\\", _TRUNCATE);
     wcsncat_s(dir, token_paste(L, module_name), _TRUNCATE);
     GetShortPathNameW(dir, dir, _countof(dir));
