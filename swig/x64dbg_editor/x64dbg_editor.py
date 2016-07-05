@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 # Created by Storm Shadow www.techbliss.org
 
 print ''' ###################################################
- #              Author Storm Shadow                # 
- #                   Hotkeys                       # 
+ #              Author Storm Shadow                #
+ #                   Hotkeys                       #
  #         NewFile:            Ctrl+N              #
  #         OpenFile:           Ctrl+O              #
  #         SaveFile:           Ctrl+S              #
@@ -16,18 +17,23 @@ print ''' ###################################################
  #         ResetFolding:       Ctrl+R              #
  #         CircleFolding:      Ctrl+C              #
  #         PlainFolding:       Ctrl+P              #
- #         Xdbg64 Home:        Ctrl+W              #
- #         Irc:                Ctrl+I              #
- #         x64dbgPythonGit:    Ctrl+G              #
+ #         x64dbg website:     Ctrl+W              #
+ #         x64dbg IRC:         Ctrl+I              #
+ #         PythonGit:          Ctrl+G              #
  #         Author:             Ctrl+B              #
+ #         Enable Reg:         Alt+E               #
+ #         Disable Reg:        Alt+D               #
+ #         Zoom +:             CTRL+SHIFT++        #
+ #         Zoom -:             CTRL+SHIFT+-        #
  ###################################################
- #              x64dbg python Editor               #
+ #              x64dbg Python Editor               #
  ###################################################
 '''
 
 import sys
 import re
 import os
+import traceback
 from os import path
 import sys
 dn = os.getcwd()
@@ -35,6 +41,7 @@ sys.path.insert(0, os.getcwd() + r'\\plugins\\x64dbg_editor\\icons')
 sys.path.insert(0, os.getcwd() + r'\\plugins\\x64dbg_editor')
 sys.path.insert(0, dn)
 apifolder = dn + r'\\plugins\\x64dbg_editor'
+sys.path.insert(0, os.getcwd() + r'\icons')
 
 import PyQt5
 from PyQt5 import QtCore, QtGui, Qsci, QtWidgets
@@ -42,37 +49,58 @@ from PyQt5.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs, \
     QsciScintillaBase
 from PyQt5.QtGui import QFont, QFontMetrics, QColor, QTextCursor
 from PyQt5.QtWidgets import QMainWindow
+
 try:
     import ico
 except ImportError:
     import icons.ico
 
 try:
+    import iconsmore
+except ImportError:
+    import icons.iconsmore
+
+try:
+    import icons3
+except ImportError:
+    import icons.icons3
+
+try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
+
+
     def _fromUtf8(s):
         return s
 
+
 try:
     _encoding = QtWidgets.QApplication.UnicodeUTF8
+
 
     def _translate(context, text, disambig):
         return QtWidgets.QApplication.translate(context, text,
                 disambig, _encoding)
 
+
 except AttributeError:
+
+
     def _translate(context, text, disambig):
         return QtWidgets.QApplication.translate(context, text, disambig)
 
 
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8('MainWindow'))
         MainWindow.resize(640, 480)
         self.vindu = QtWidgets.QWidget(MainWindow)
         self.vindu.setStyleSheet(_fromUtf8('notusedasyet'))
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
         # MainWindow.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
         self.filename = ''
         self.vindu.setObjectName(_fromUtf8('vindu'))
         self.verticalLayout = QtWidgets.QVBoxLayout(self.vindu)
@@ -98,6 +126,7 @@ class Ui_MainWindow(object):
         self.toolBar.addSeparator()
 
         # first action Newfile
+
         self.toolBar.newAction = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/new.png'), 'New',
                               self.toolBar)
@@ -107,6 +136,7 @@ class Ui_MainWindow(object):
         self.toolBar.newAction.triggered.connect(self.newfile)
 
         # second Action OpenFile
+
         self.toolBar.secondAction = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/open.png'), 'Open',
                               self.toolBar)
@@ -116,6 +146,7 @@ class Ui_MainWindow(object):
         self.toolBar.secondAction.triggered.connect(self.open)
 
         # action 3 save file
+
         self.toolBar.Action3 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/save.png'), 'Save',
                               self.toolBar)
@@ -124,6 +155,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action3.triggered.connect(self.savefile)
 
         # action 4 run file
+
         self.toolBar.Action4 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/run32.png'),
                               'Run To Debugger', self.toolBar)
@@ -134,6 +166,7 @@ class Ui_MainWindow(object):
 
         # action 4 run file on windows
         # action 6 undo
+
         self.toolBar.Action6 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/undo.png'), 'Undo',
                               self.toolBar)
@@ -142,6 +175,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action6.triggered.connect(self.codebox.undo)
 
         # action 7 redo
+
         self.toolBar.Action7 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/redo.png'), 'Redo',
                               self.toolBar)
@@ -150,6 +184,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action7.triggered.connect(self.codebox.redo)
 
         # action8 rerset Folding
+
         self.toolBar.Action8 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/align-justify.png'),
                               'Reset Folding', self.toolBar)
@@ -158,6 +193,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action8.triggered.connect(self.nofoldingl)
 
         # actions9 CircledTreeFoldStyle
+
         self.toolBar.Action9 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/bullet.png'),
                               'Circled Tree Folding', self.toolBar)
@@ -166,6 +202,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action9.triggered.connect(self.Circledfold)
 
         # actions10 plainFoldStyle
+
         self.toolBar.Action10 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/number.png'),
                               'Plain Folding', self.toolBar)
@@ -174,6 +211,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action10.triggered.connect(self.plainfold)
 
         # web baby
+
         self.toolBar.Action11 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/web.png'),
                               'Goto x64dbg homepage', self.toolBar)
@@ -182,6 +220,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action11.triggered.connect(self.webopen)
 
         # irc
+
         self.toolBar.Action12 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/irc.png'),
                               'Open x64dbg IRC', self.toolBar)
@@ -190,6 +229,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action12.triggered.connect(self.ircopen)
 
         # github Python
+
         self.toolBar.Action14 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/github.png'),
                               'Open git python', self.toolBar)
@@ -198,6 +238,7 @@ class Ui_MainWindow(object):
         self.toolBar.Action14.triggered.connect(self.gitopen)
 
         # auther me :)
+
         self.toolBar.Action15 = \
             QtWidgets.QAction(QtGui.QIcon(':/ico/auth.png'), 'Author',
                               self.toolBar)
@@ -205,7 +246,51 @@ class Ui_MainWindow(object):
         self.toolBar.Action15.setShortcut('Ctrl+B')
         self.toolBar.Action15.triggered.connect(self.Author)
 
+        # toggle off code regonision
+
+        self.toolBar.Action16 = \
+            QtWidgets.QAction(QtGui.QIcon(':/ico2/pythonminus.png'),
+                              'Disable Code recognition', self.toolBar)
+        self.toolBar.Action16.setStatusTip('Disable Code recognition')
+        self.toolBar.Action16.setShortcut('Alt+D')
+        self.toolBar.Action16.triggered.connect(self.Diablecode)
+
+        # toogle on
+
+        self.toolBar.Action17 = \
+            QtWidgets.QAction(QtGui.QIcon(':/ico2/pypluss.png'),
+                              'Enable Code recognition', self.toolBar)
+        self.toolBar.Action17.setStatusTip('Enable Code recognition')
+        self.toolBar.Action17.setShortcut('Alt+E')
+        self.toolBar.Action17.triggered.connect(self.Reiablecode)
+
+        # zoom in
+
+        self.toolBar.Action18 = \
+            QtWidgets.QAction(QtGui.QIcon(':/ico3/in.png'), 'Zoom In',
+                              self.toolBar)
+        self.toolBar.Action18.setStatusTip('Zoom In')
+        self.toolBar.Action18.setShortcut('CTRL+SHIFT++')
+        self.toolBar.Action18.triggered.connect(self.udder)
+
+        # zoom out
+
+        self.toolBar.Action19 = \
+            QtWidgets.QAction(QtGui.QIcon(':/ico3/out.png'), 'Zoom Out'
+                              , self.toolBar)
+        self.toolBar.Action19.setStatusTip('Zoom Out')
+        self.toolBar.Action19.setShortcut('CTRL+SHIFT+-')
+        self.toolBar.Action19.triggered.connect(self.odder)
+
+        self.toolBar.Action20 = \
+            QtWidgets.QAction(QtGui.QIcon(':/ico3/10.png'),
+                              'Profile Code', self.toolBar)
+        self.toolBar.Action20.setStatusTip('Profile Code')
+        self.toolBar.Action20.setShortcut('CTRL+SHIFT+E')
+        self.toolBar.Action20.triggered.connect(self.runtoprob)
+
         # actions
+
         self.toolBar.addAction(self.toolBar.newAction)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.toolBar.secondAction)
@@ -217,6 +302,7 @@ class Ui_MainWindow(object):
         # self.toolBar.addSeparator()
         # For now global run isent here
         # self.toolBar.addAction(self.toolBar.Action5)
+
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.toolBar.Action6)
         self.toolBar.addSeparator()
@@ -235,10 +321,19 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.toolBar.Action14)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.toolBar.Action15)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.toolBar.Action16)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.toolBar.Action17)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.toolBar.Action18)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.toolBar.Action19)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.toolBar.Action20)
 
-        # self.toolBar.addSeparator()
-        # self.toolBar.addAction(self.toolBar.Action16)
         # font
+
         skrift = QFont()
         skrift.setFamily('Consolas')
         skrift.setFixedPitch(True)
@@ -246,16 +341,15 @@ class Ui_MainWindow(object):
         self.codebox.setFont(skrift)
 
         # python style
+
         lexer = QsciLexerPython(self.codebox)
 
         # api test not working
-        api = Qsci.QsciAPIs(lexer)
-        API_FILE = apifolder + '\\python.api'
 
-        # in case editor is run outside x64dbg
-        API_FILE2 = dn + '\\python.api'
+        api = Qsci.QsciAPIs(lexer)
+        apidir = os.path.dirname(os.path.realpath(__file__))
+        API_FILE = apidir + r'\Python.api'
         api.load(API_FILE)
-        api.load(API_FILE2)
         api.prepare()
         self.codebox.setAutoCompletionThreshold(1)
         self.codebox.setAutoCompletionThreshold(6)
@@ -267,19 +361,23 @@ class Ui_MainWindow(object):
                                    'Consolas')
 
         # line numbers
+
         fontmetrics = QFontMetrics(skrift)
         self.codebox.setMarginsFont(skrift)
         self.codebox.setMarginWidth(0, fontmetrics.width('0000') + 6)
         self.codebox.setTabWidth(4)
 
         # brace
+
         self.codebox.setBraceMatching(QsciScintilla.SloppyBraceMatch)
         self.codebox.setCaretLineBackgroundColor(QColor('#ffe4e4'))
 
         # auto line tab =4
+
         self.codebox.setAutoIndent(True)
 
         # scrollbar
+
         self.codebox.SendScintilla(QsciScintilla.SCI_SETHSCROLLBAR, 1)
 
         self.retranslateUi(MainWindow)
@@ -292,6 +390,13 @@ class Ui_MainWindow(object):
                                     None))
 
     # functions fo actions
+
+    def udder(self):
+        self.codebox.zoomIn()
+
+    def odder(self):
+        self.codebox.zoomOut()
+
     def newfile(self):
         self.codebox.clear()
 
@@ -299,6 +404,7 @@ class Ui_MainWindow(object):
         self.path = QtCore.QFileInfo(self.filename).path()
 
         # Get filename and show only .writer files
+
         (self.filename, _) = \
             QtWidgets.QFileDialog.getOpenFileName(self.vindu,
                 'Open File', self.path,
@@ -343,9 +449,27 @@ class Ui_MainWindow(object):
             sys.path.insert(0, str(self.path))
             exec (script, g)
             QtGui.QCloseEvent()
-        except Exception, e:
-            print str(e)
+        except:
+            traceback.print_exc()
             QtGui.QCloseEvent()
+
+    def runtoprob(self):
+        try:
+            self.path = QtCore.QFileInfo(self.filename).path()
+        except AttributeError:
+            pass
+        self.path = QtCore.QFileInfo(self.filename).path()
+        g = globals()
+        os.chdir(str(self.path))
+        script = str(self.codebox.text())
+        import cProfile
+        cProfile.run(script)
+
+    def Diablecode(self):
+        self.codebox.setAutoCompletionSource(Qsci.QsciScintilla.AcsNone)
+
+    def Reiablecode(self):
+        self.codebox.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
 
     def nofoldingl(self):
         self.codebox.setFolding(QsciScintilla.NoFoldStyle)
@@ -372,15 +496,18 @@ class Ui_MainWindow(object):
         import webbrowser
         webbrowser.open('https://twitter.com/zadow28')
 
+
 class MyWindow(QtWidgets.QMainWindow):
+
     '''
     we have to ask user for quiting so we can change back to root dir
     '''
+
     def closeEvent(self, event):
         os.chdir(dn)
         print '''
  ###################################################
- #              Author Storm Shadow                # 
+ #              Author Storm Shadow                #
  #                   Thx To                        #
  #                  Tomer Zait                     #
  #                   mrexodia                      #
@@ -392,13 +519,22 @@ class MyWindow(QtWidgets.QMainWindow):
         os.chdir(dn)
         event.accept()
 
+
+from PyQt5 import Qsci
+
 if __name__ == '__main__':
     import sys
-    app = QtWidgets.QApplication.instance()
-    if not app:
-        app = QtWidgets.QApplication([])
+
+    # app = QtWidgets.QApplication.instance() #enable for usage outside x64dbg
+    # if not app: #enable for usage outside x64dbg
+        # app = QtWidgets.QApplication([]) #enable for usage outside x64dbg
+
     MainWindow = MyWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
+    MainWindow.resize(1000, 600)
     MainWindow.show()
-    app.exec_()
+
+    # app.exec_() #enable for usage outside x64dbg
+
+            
