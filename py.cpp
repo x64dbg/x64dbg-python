@@ -13,7 +13,7 @@
 #define token_paste(a, b) token_paste_(a, b)
 #define token_paste_(a, b) a ## b
 #define event_object_name "Event"
-#define autorun_directory L"plugins\\x64dbgpy\\autorun"
+#define autorun_directory L"plugins\\x64dbgpy\\x64dbgpy\\autorun"
 // lParam: ScanCode=0x41(ALT), cRepeat=1, fExtended=False, fAltDown=True, fRepeat=False, fUp=False
 #define ALT_F7_SYSKEYDOWN 0x20410001
 
