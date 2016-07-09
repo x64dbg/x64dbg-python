@@ -1,5 +1,9 @@
 from .. import x64dbg
 
+
+GUI_MAX_LINE_SIZE = 65536
+
+
 # Script::Gui
 def Gui_SelectionGet(window):
     result, start, end = x64dbg.Gui_SelectionGet(window)
@@ -14,6 +18,26 @@ def Gui_SelectionGetStart(window):
 
 def Gui_SelectionGetEnd(window):
     return x64dbg.Gui_SelectionGetEnd(window)
+
+def Message(message):
+    x64dbg.Message(message)
+
+def MessageYesNo(message):
+    return x64dbg.MessageYesNo(message)
+
+def InputLine(title):
+    text = ctypes.create_string_buffer(GUI_MAX_LINE_SIZE)
+    res =  x64dbg.InputLine(title, text)
+    if res:
+        return text.value
+
+def InputValue(title):
+    res, value =  x64dbg.InputValue(title)
+    if res:
+        return value
+
+def Refresh():
+    x64dbg.Refresh()
 
 
 # Script::Gui::Disassembly

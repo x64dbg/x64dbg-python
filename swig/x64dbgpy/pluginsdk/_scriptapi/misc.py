@@ -1,8 +1,10 @@
 from .. import x64dbg
 
 
-def ParseExpression(expression, value):
-    return x64dbg.ParseExpression(expression, value)
+def ParseExpression(expression):
+    res, value = x64dbg.ParseExpression(expression)
+    if res:
+        return value
 
 def RemoteGetProcAddress(module, api):
     return x64dbg.RemoteGetProcAddress(module, api)

@@ -72,6 +72,18 @@ def SectionFromName(name, number):
     if result:
         return section
 
+def SectionListFromAddr(addr):
+    l = x64dbg.ListInfo()
+    res = x64dbg.SectionListFromAddr(addr, l)
+    if res:
+        return x64dbg.GetModuleSectionInfoList(l)
+
+def SectionListFromName(name):
+    l = x64dbg.ListInfo()
+    res = x64dbg.SectionListFromName(addr, l)
+    if res:
+        return x64dbg.GetModuleSectionInfoList(l)
+
 def GetMainModuleInfo():
     info = x64dbg.ModuleInfo()
     result = x64dbg.GetMainModuleInfo(info)
@@ -101,3 +113,15 @@ def GetMainModulePath():
     result = x64dbg.GetMainModulePath(path)
     if result:
         return path.value
+
+def GetMainModuleSectionList():
+    l = x64dbg.ListInfo()
+    res = x64dbg.GetMainModuleSectionList(l)
+    if res:
+        return x64dbg.GetModuleSectionInfoList(l)
+
+def GetList():
+    l = x64dbg.ListInfo()
+    res = x64dbg.GetList(l)
+    if res:
+        return x64dbg.GetModuleInfoList(l)

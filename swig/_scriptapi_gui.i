@@ -23,6 +23,7 @@
 %rename(Stack_SelectionGetStart) Script::Gui::Stack::SelectionGetStart;
 %rename(Stack_SelectionGetEnd) Script::Gui::Stack::SelectionGetEnd;
 
+%apply duint *OUTPUT { duint *value };
 %apply duint *OUTPUT { duint *start };
 %apply duint *OUTPUT { duint *end };
 

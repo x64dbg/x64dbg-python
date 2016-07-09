@@ -1,6 +1,7 @@
 %module bridgemain
 %{
 #include "bridgemain.h"
+#define nullptr 0
 %}
 
 // Allow Python Buffers
