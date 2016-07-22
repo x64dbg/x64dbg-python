@@ -45,7 +45,7 @@ typedef struct
     char szExeFile[MAX_PATH];
 } DBGPROCESSINFO;
 
-enum TRACERECORDBYTETYPE
+typedef enum
 {
     InstructionBody = 0,
     InstructionHeading = 1,
@@ -63,15 +63,15 @@ enum TRACERECORDBYTETYPE
     DataMMX,
     DataMixed, //the byte is accessed in multiple ways
     InstructionDataMixed //the byte is both executed and written
-};
+} TRACERECORDBYTETYPE;
 
-enum TRACERECORDTYPE
+typedef enum
 {
     TraceRecordNone,
     TraceRecordBitExec,
     TraceRecordByteWithExecTypeAndCounter,
     TraceRecordWordWithExecTypeAndCounter
-};
+} TRACERECORDTYPE;
 
 typedef struct
 {
@@ -126,23 +126,24 @@ typedef bool (*GETCMDLINE)(char* cmdline, size_t* cbsize);
 typedef bool (*SETCMDLINE)(const char* cmdline);
 typedef duint(*FILEOFFSETTOVA)(const char* modname, duint offset);
 typedef duint(*VATOFILEOFFSET)(duint va);
-typedef duint(*GETADDRFROMLINE)(const char* szSourceFile, int line);
+typedef duint(*GETADDRFROMLINE)(const char* szSourceFile, int line, duint* displacement);
 typedef bool (*GETSOURCEFROMADDR)(duint addr, char* szSourceFile, int* line);
 typedef bool (*VALFROMSTRING)(const char* string, duint* value);
 typedef bool (*PATCHGETEX)(duint addr, DBGPATCHINFO* info);
-typedef bool(*GETBRIDGEBP)(BPXTYPE type, duint addr, BRIDGEBP* bp);
-typedef bool(*STRINGFORMATINLINE)(const char* format, size_t resultSize, char* result);
-typedef void(*GETMNEMONICBRIEF)(const char* mnem, size_t resultSize, char* result);
+typedef bool (*GETBRIDGEBP)(BPXTYPE type, duint addr, BRIDGEBP* bp);
+typedef bool (*STRINGFORMATINLINE)(const char* format, size_t resultSize, char* result);
+typedef void (*GETMNEMONICBRIEF)(const char* mnem, size_t resultSize, char* result);
 typedef unsigned int (*GETTRACERECORDHITCOUNT)(duint address);
 typedef TRACERECORDBYTETYPE(*GETTRACERECORDBYTETYPE)(duint address);
 typedef bool (*SETTRACERECORDTYPE)(duint pageAddress, TRACERECORDTYPE type);
 typedef TRACERECORDTYPE(*GETTRACERECORDTYPE)(duint pageAddress);
-typedef bool(*ENUMHANDLES)(ListOf(HANDLEINFO) handles);
-typedef bool(*GETHANDLENAME)(duint handle, char* name, size_t nameSize, char* typeName, size_t typeNameSize);
-typedef bool(*ENUMTCPCONNECTIONS)(ListOf(TCPCONNECTIONINFO) connections);
+typedef bool (*ENUMHANDLES)(ListOf(HANDLEINFO) handles);
+typedef bool (*GETHANDLENAME)(duint handle, char* name, size_t nameSize, char* typeName, size_t typeNameSize);
+typedef bool (*ENUMTCPCONNECTIONS)(ListOf(TCPCONNECTIONINFO) connections);
 typedef duint(*GETDBGEVENTS)();
-typedef int(*MODGETPARTY)(duint base);
-typedef void(*MODSETPARTY)(duint base, int party);
+typedef int (*MODGETPARTY)(duint base);
+typedef void (*MODSETPARTY)(duint base, int party);
+typedef bool (*WATCHISWATCHDOGTRIGGERED)(unsigned int id);
 
 typedef struct DBGFUNCTIONS_
 {
@@ -196,6 +197,7 @@ typedef struct DBGFUNCTIONS_
     GETDBGEVENTS GetDbgEvents;
     MODGETPARTY ModGetParty;
     MODSETPARTY ModSetParty;
+    WATCHISWATCHDOGTRIGGERED WatchIsWatchdogTriggered;
 } DBGFUNCTIONS;
 
 #ifdef BUILD_DBG

@@ -8,6 +8,7 @@ copy bin\x32\x64dbgpy.dll %PLUGINDIR%\x64dbgpy.dp32
 call clean.bat
 call "%~dp0\setenv.bat"
 call %VCVARS% x86
+set PYTHONHOME=%PYTHON27X86%
 "%PYTHON27X86%\python.exe" setup.py  install --install-lib=%PLUGINDIR%\x64dbgpy
 @cd ..
 

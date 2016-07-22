@@ -55,6 +55,17 @@ BRIDGE_IMPEXP bool BridgeSettingFlush();
 BRIDGE_IMPEXP bool BridgeSettingRead(int* errorLine);
 BRIDGE_IMPEXP int BridgeGetDbgVersion();
 
+#ifdef __cplusplus
+}
+#endif
+
+#include "bridgegraph.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //Debugger defines
 #define MAX_LABEL_SIZE 256
 #define MAX_COMMENT_SIZE 512
@@ -65,6 +76,7 @@ BRIDGE_IMPEXP int BridgeGetDbgVersion();
 #define MAX_CONDITIONAL_TEXT_SIZE 256
 #define MAX_SCRIPT_LINE_SIZE 2048
 #define MAX_THREAD_NAME_SIZE 256
+#define MAX_WATCH_NAME_SIZE 256
 #define MAX_STRING_SIZE 512
 #define MAX_ERROR_SIZE 512
 #define RIGHTS_STRING_SIZE (sizeof("ERWCG") + 1)
@@ -214,6 +226,7 @@ typedef enum
     DBG_ARGUMENT_OVERLAPS,          // param1=FUNCTION* info,            param2=unused
     DBG_ARGUMENT_ADD,               // param1=FUNCTION* info,            param2=unused
     DBG_ARGUMENT_DEL,               // param1=FUNCTION* info,            param2=unused
+    DBG_GET_WATCH_LIST              // param1=ListOf(WATCHINFO),         param2=unused
 } DBGMSG;
 
 typedef enum
@@ -343,6 +356,25 @@ typedef enum
     enc_middle    //middle of data
 } ENCODETYPE;
 
+typedef enum
+{
+    TYPE_UINT, // unsigned integer
+    TYPE_INT,  // signed integer
+    TYPE_FLOAT,// single precision floating point value
+    TYPE_ASCII, // ascii string
+    TYPE_UNICODE, // unicode string
+    TYPE_INVALID // invalid watch expression or data type
+} WATCHVARTYPE;
+
+typedef enum
+{
+    MODE_DISABLED, // watchdog is disabled
+    MODE_ISTRUE,   // alert if expression is not 0
+    MODE_ISFALSE,  // alert if expression is 0
+    MODE_CHANGED,  // alert if expression is changed
+    MODE_UNCHANGED // alert if expression is not changed
+} WATCHDOGMODE;
+
 //Debugger typedefs
 typedef MEMORY_SIZE VALUE_SIZE;
 typedef struct SYMBOLINFO_ SYMBOLINFO;
@@ -376,6 +408,7 @@ typedef struct
     // extended part
     unsigned int hitCount;
     bool fastResume;
+    bool silent;
     char breakCondition[MAX_CONDITIONAL_EXPR_SIZE];
     char logText[MAX_CONDITIONAL_TEXT_SIZE];
     char logCondition[MAX_CONDITIONAL_EXPR_SIZE];
@@ -388,6 +421,18 @@ typedef struct
     int count;
     BRIDGEBP* bp;
 } BPMAP;
+
+typedef struct
+{
+    char WatchName[MAX_WATCH_NAME_SIZE];
+    char Expression[MAX_CONDITIONAL_EXPR_SIZE];
+    unsigned int window;
+    unsigned int id;
+    WATCHVARTYPE varType;
+    WATCHDOGMODE watchdogMode;
+    duint value;
+    bool watchdogTriggered;
+} WATCHINFO;
 
 typedef struct
 {
@@ -806,6 +851,7 @@ BRIDGE_IMPEXP duint DbgGetEncodeSizeAt(duint addr, duint codesize);
 BRIDGE_IMPEXP bool DbgSetEncodeType(duint addr, duint size, ENCODETYPE type);
 BRIDGE_IMPEXP void DbgDelEncodeTypeRange(duint start, duint end);
 BRIDGE_IMPEXP void DbgDelEncodeTypeSegment(duint start);
+BRIDGE_IMPEXP bool DbgGetWatchList(ListOf(WATCHINFO) list);
 
 //Gui defines
 #define GUI_PLUGIN_MENU 0
@@ -901,6 +947,10 @@ typedef enum
     GUI_UNREGISTER_SCRIPT_LANG,     // param1=int id,               param2=unused
     GUI_UPDATE_ARGUMENT_VIEW,       // param1=unused,               param2=unused
     GUI_FOCUS_VIEW,                 // param1=int hWindow,          param2=unused
+    GUI_UPDATE_WATCH_VIEW,          // param1=unused,               param2=unused
+    GUI_LOAD_GRAPH,                 // param1=BridgeCFGraphList*    param2=unused
+    GUI_GRAPH_AT,                   // param1=duint addr            param2=unused
+    GUI_UPDATE_GRAPH_VIEW           // param1=unused,               param2=unused
 } GUIMSG;
 
 //GUI Typedefs
@@ -977,6 +1027,7 @@ BRIDGE_IMPEXP void GuiReferenceSetCurrentTaskProgress(int progress, const char* 
 BRIDGE_IMPEXP void GuiReferenceSetSearchStartCol(int col);
 BRIDGE_IMPEXP void GuiStackDumpAt(duint addr, duint csp);
 BRIDGE_IMPEXP void GuiUpdateDumpView();
+BRIDGE_IMPEXP void GuiUpdateWatchView();
 BRIDGE_IMPEXP void GuiUpdateThreadView();
 BRIDGE_IMPEXP void GuiUpdateMemoryView();
 BRIDGE_IMPEXP void GuiAddRecentFile(const char* file);
@@ -1020,6 +1071,9 @@ BRIDGE_IMPEXP void GuiFocusView(int hWindow);
 BRIDGE_IMPEXP bool GuiIsUpdateDisabled();
 BRIDGE_IMPEXP void GuiUpdateEnable(bool updateNow);
 BRIDGE_IMPEXP void GuiUpdateDisable();
+BRIDGE_IMPEXP void GuiLoadGraph(BridgeCFGraphList* graph, duint addr);
+BRIDGE_IMPEXP bool GuiGraphAt(duint addr);
+BRIDGE_IMPEXP void GuiUpdateGraphView();
 
 #ifdef __cplusplus
 }

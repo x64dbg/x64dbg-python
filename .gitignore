@@ -13,6 +13,8 @@ release/
 *.layout
 *.depend
 *.pyc
+*.VC.db
+*.VC.opendb
 ipch/
 .idea/
 swig/build/

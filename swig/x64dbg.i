@@ -1,10 +1,10 @@
 %module x64dbg
 
-// bridgemain.h
-%include "bridgemain.i"
-
 // bridgelist.h
 %include "bridgelist.i"
+
+// bridgemain.h
+%include "bridgemain.i"
 
 // _plugins.h
 %include "_plugins.i"
