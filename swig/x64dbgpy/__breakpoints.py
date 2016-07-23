@@ -30,8 +30,6 @@ class Breakpoint(object):
         self.enable()
 
     def __breakpoint_function(self, **kwargs):
-        print kwargs
-
         address = kwargs['addr']
         if address in self.__breakpoints:
             if not (kwargs['enabled'] and kwargs['active']):
