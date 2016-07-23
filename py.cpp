@@ -141,7 +141,10 @@ static bool ExecutePythonScript(wchar_t* szFileName)
         Py_DECREF(f);
     }
 
+    wchar_t szCurrentDir[MAX_PATH] = L"";
+    GetCurrentDirectoryW(_countof(szCurrentDir), szCurrentDir);
     auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
+    SetCurrentDirectoryW(szCurrentDir);
     Py_DECREF(dict);
     Py_DECREF(PyFileObject);
 
