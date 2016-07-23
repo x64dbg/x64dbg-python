@@ -99,7 +99,7 @@ static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
     return (FALSE != GetOpenFileNameW(&sOpenFileName));
 }
 
-static bool ExecutePythonScript(wchar_t* szFileName)
+static bool ExecutePythonScript(const wchar_t* szFileName)
 {
     String szFileNameA = Utf16ToUtf8(szFileName);
     PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
@@ -161,6 +161,17 @@ static bool ExecutePythonScript(wchar_t* szFileName)
 
     _plugin_logputs("[PYTHON] Execution is done!");
     return true;
+}
+
+// Exports for other plugins
+extern "C" __declspec(dllexport) bool ExecutePythonScriptA(const char* szFileName)
+{
+    return ExecutePythonScript(Utf8ToUtf16(szFileName).c_str());
+}
+
+extern "C" __declspec(dllexport) bool ExecutePythonScriptW(const wchar_t* szFileName)
+{
+    return ExecutePythonScript(szFileName);
 }
 
 // OpenScript [EntryPointVA]

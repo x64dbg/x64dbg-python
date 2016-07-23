@@ -1,8 +1,11 @@
 @echo off
 
-set PLUGINDIR="%~dp0\release\x32\plugins"
+set RELEASEDIR=%~dp0release
+set PLUGINDIR="%RELEASEDIR%\x32\plugins"
 mkdir %PLUGINDIR%
-copy bin\x32\x64dbgpy.dll %PLUGINDIR%\x64dbgpy.dp32
+copy bin\x32\x64dbgpy.dp32 %PLUGINDIR%\
+copy bin\x32\x64dbgpy.lib %RELEASEDIR%\x64dbgpy_x86.lib
+copy x64dbgpy.h %RELEASEDIR%\
 
 @cd swig
 call clean.bat

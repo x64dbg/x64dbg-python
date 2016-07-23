@@ -81,6 +81,7 @@
     <ClInclude Include="py.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stringutils.h" />
+    <ClInclude Include="x64dbgpy.h" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -127,7 +128,7 @@
     <OutDir>$(SolutionDir)bin\x32\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <TargetName>x64dbgpy</TargetName>
-    <TargetExt>.dll</TargetExt>
+    <TargetExt>.dp32</TargetExt>
     <IncludePath>$(Python27x86)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(Python27x86)\libs;$(LibraryPath)</LibraryPath>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -136,7 +137,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\x64\</OutDir>
     <TargetName>x64dbgpy</TargetName>
-    <TargetExt>.dll</TargetExt>
+    <TargetExt>.dp64</TargetExt>
     <IncludePath>$(Python27x64)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(Python27x64)\libs;$(LibraryPath)</LibraryPath>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
