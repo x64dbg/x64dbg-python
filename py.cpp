@@ -141,8 +141,14 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
         Py_DECREF(f);
     }
 
-    wchar_t szCurrentDir[MAX_PATH] = L"";
-    GetCurrentDirectoryW(_countof(szCurrentDir), szCurrentDir);
+    static wchar_t szCurrentDir[MAX_PATH] = L"";
+    if(!*szCurrentDir)
+    {
+        GetModuleFileNameW(NULL, szCurrentDir, _countof(szCurrentDir));
+        PathRemoveFileSpecW(szCurrentDir);
+    }
+
+    SetCurrentDirectoryW(szCurrentDir);
     auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
     SetCurrentDirectoryW(szCurrentDir);
     Py_DECREF(dict);
