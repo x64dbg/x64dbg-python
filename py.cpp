@@ -672,7 +672,7 @@ static std::wstring makeX64dbgPackageDir(const std::wstring & directory)
 
 static bool isValidPythonHome(const wchar_t* directory)
 {
-    if(!directory)
+    if(!directory || !*directory)
         return false;
     auto attr = GetFileAttributesW(makeX64dbgPackageDir(directory).c_str());
     if(attr == INVALID_FILE_ATTRIBUTES)
@@ -694,7 +694,7 @@ static bool findX64dbgPythonHome(std::wstring & home)
         }
         _plugin_logprintf("[PYTHON] Found invalid PythonHome setting \"%s\"...\n", setting);
     }
-    //Get from environment variable
+    //Get from the developer environment variable
 #ifdef _WIN64
     auto python27x = _wgetenv(L"PYTHON27X64");
 #else
@@ -710,6 +710,22 @@ static bool findX64dbgPythonHome(std::wstring & home)
         home = python27x;
         return true;
     }
+    //Get from registry
+    HKEY hKey;
+    wchar_t szRegHome[MAX_SETTING_SIZE] = L"";
+    if(RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Python\\PythonCore\\2.7\\InstallPath", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        DWORD dwSize = sizeof(szRegHome);
+        RegQueryValueExW(hKey, nullptr, nullptr, nullptr, LPBYTE(szRegHome), &dwSize);
+        RegCloseKey(hKey);
+    }
+    if(isValidPythonHome(szRegHome))
+    {
+        _plugin_logputs("[PYTHON] Found valid PythonHome in the registry!");
+        home = szRegHome;
+        return true;
+    }
+    //Get from PYTHONHOME environment variable
     auto pythonHome = _wgetenv(L"PYTHONHOME");
     if(isValidPythonHome(pythonHome))
     {
@@ -717,8 +733,6 @@ static bool findX64dbgPythonHome(std::wstring & home)
         home = pythonHome;
         return true;
     }
-    //Get from registry
-    //TODO
     return false;
 }
 
@@ -751,8 +765,10 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
     if(!findX64dbgPythonHome(home))
     {
         _plugin_logputs("[PYTHON] Failed to find PythonHome (do you have \\Lib\\site-packages?)...");
+        BridgeSettingSet("x64dbgpy", "PythonHome", "Install Python!");
         return false;
     }
+    BridgeSettingSet("x64dbgpy", "PythonHome", Utf16ToUtf8(home).c_str());
     static wchar_t dir[65536] = L"";
     GetShortPathNameW(home.c_str(), dir, _countof(dir));
     static char PythonHomeStatic[65536] = "";
