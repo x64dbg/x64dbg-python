@@ -620,10 +620,8 @@ static void cbBreakPointCallback(CBTYPE cbType, void* info)
                       "name", breakpoint->name,
                       "slot", breakpoint->slot
                   );
-        PyGILState_STATE gstate;
-        gstate = PyGILState_Ensure();
+
         pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        PyGILState_Release(gstate);
         Py_DECREF(pKwargs);
         Py_DECREF(pFunc);
         if(pValue == NULL)
