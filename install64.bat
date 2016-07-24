@@ -3,7 +3,7 @@
 set RELEASEDIR=%~dp0release
 set PLUGINDIR="%RELEASEDIR%\x64\plugins"
 mkdir %PLUGINDIR%
-copy bin\x64\x64dbgpy.dp32 %PLUGINDIR%\
+copy bin\x64\x64dbgpy.dp64 %PLUGINDIR%\
 copy bin\x64\x64dbgpy.lib %RELEASEDIR%\x64dbgpy_x64.lib
 copy x64dbgpy.h %RELEASEDIR%\
 
