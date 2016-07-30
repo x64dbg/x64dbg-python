@@ -690,6 +690,10 @@ typedef struct
     THREADPRIORITY Priority;
     THREADWAITREASON WaitReason;
     DWORD LastError;
+    FILETIME UserTime;
+    FILETIME KernelTime;
+    FILETIME CreationTime;
+    ULONG64 Cycles; // Windows Vista or greater
 } THREADALLINFO;
 
 typedef struct
@@ -950,7 +954,12 @@ typedef enum
     GUI_UPDATE_WATCH_VIEW,          // param1=unused,               param2=unused
     GUI_LOAD_GRAPH,                 // param1=BridgeCFGraphList*    param2=unused
     GUI_GRAPH_AT,                   // param1=duint addr            param2=unused
-    GUI_UPDATE_GRAPH_VIEW           // param1=unused,               param2=unused
+    GUI_UPDATE_GRAPH_VIEW,          // param1=unused,               param2=unused
+    GUI_SET_LOG_ENABLED,            // param1=bool isEnabled        param2=unused
+    GUI_ADD_FAVOURITE_TOOL,         // param1=const char* name      param2=const char* description
+    GUI_ADD_FAVOURITE_COMMAND,      // param1=const char* command   param2=const char* shortcut
+    GUI_SET_FAVOURITE_TOOL_SHORTCUT,// param1=const char* name      param2=const char* shortcut
+    GUI_FOLD_DISASSEMBLY            // param1=duint startAddress    param2=duint length
 } GUIMSG;
 
 //GUI Typedefs
@@ -1074,6 +1083,12 @@ BRIDGE_IMPEXP void GuiUpdateDisable();
 BRIDGE_IMPEXP void GuiLoadGraph(BridgeCFGraphList* graph, duint addr);
 BRIDGE_IMPEXP bool GuiGraphAt(duint addr);
 BRIDGE_IMPEXP void GuiUpdateGraphView();
+BRIDGE_IMPEXP void GuiDisableLog();
+BRIDGE_IMPEXP void GuiEnableLog();
+BRIDGE_IMPEXP void GuiAddFavouriteTool(const char* name, const char* description);
+BRIDGE_IMPEXP void GuiAddFavouriteCommand(const char* name, const char* shortcut);
+BRIDGE_IMPEXP void GuiSetFavouriteToolShortcut(const char* name, const char* shortcut);
+BRIDGE_IMPEXP void GuiFoldDisassembly(duint startAddress, duint length);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 import functools
-from utils import is_64bit
+from utils import is_64bit, Singleton
 import pluginsdk._scriptapi
 from pluginsdk.bridgemain import GuiUpdateAllViews
 
@@ -40,6 +40,8 @@ REGISTERS = (X64_REGISTERS if is_64bit() else X86_REGISTERS) + GEN_REGISTERS
 
 
 class Register(object):
+    __metaclass__ = Singleton
+
     def __init__(self, refresh_gui=True):
         self.refresh_gui = refresh_gui
 

@@ -52,6 +52,7 @@ class OutputHook(object):
             setattr(sys, self.stream_name, self.__original_stream)
             self.is_hooking = False
 
+
 # Hook sys.stdout
 STDOUT_HOOK = OutputHook('stdout')
 STDOUT_HOOK.start()

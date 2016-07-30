@@ -30,7 +30,7 @@ Get PyQt5 [here](https://github.com/x64dbg/PyQt5/releases). Video tutorial [here
 
 ### Example scripts:
 
-* https://github.com/realgam3/ReversingAutomation/tree/master/X64dbg-Python
+* https://github.com/realgam3/ReversingAutomation/tree/master/X64dbgPy
 
 ### Help:
 

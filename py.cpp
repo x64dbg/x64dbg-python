@@ -34,6 +34,31 @@ extern "C" __declspec(dllexport) void CBMENUENTRY(CBTYPE cbType, PLUG_CB_MENUENT
     }
 }
 
+static void pyCallback(const char* eventName, PyObject* pKwargs)
+{
+    PyObject* pFunc, *pValue;
+
+    // Check if event object exist.
+    if(pEventObject == NULL)
+        return;
+
+    pFunc = PyObject_GetAttrString(pEventObject, eventName);
+    if(pFunc && PyCallable_Check(pFunc))
+    {
+        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
+        Py_DECREF(pKwargs);
+        Py_DECREF(pFunc);
+        if(pValue == NULL)
+        {
+            _plugin_logprintf("[PYTHON] Could not use %s function.\n", eventName);
+            PyErr_PrintEx(0);
+            return;
+        }
+
+        Py_DECREF(pValue);
+    }
+}
+
 static bool cbPythonCommand(int argc, char* argv[])
 {
     if(argc < 2)
@@ -85,7 +110,7 @@ static bool cbPipCommand(int argc, char* argv[])
 
 static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
 {
-    OPENFILENAMEW sOpenFileName = {0};
+    OPENFILENAMEW sOpenFileName = { 0 };
     const wchar_t szFilterString[] = L"Python files\0*.py\0\0";
     const wchar_t szDialogTitle[] = L"Select script file...";
     sOpenFileName.lStructSize = sizeof(sOpenFileName);
@@ -177,7 +202,7 @@ extern "C" __declspec(dllexport) bool ExecutePythonScriptW(const wchar_t* szFile
 // OpenScript [EntryPointVA]
 static void OpenScript()
 {
-    wchar_t szFileName[MAX_PATH] = {0};
+    wchar_t szFileName[MAX_PATH] = { 0 };
     if(!OpenFileDialog(szFileName))
         return;
 
@@ -251,255 +276,130 @@ static void cbInitDebugCallback(CBTYPE cbType, void* info)
 
 static void cbUnloadDllCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pKwargs, *pValue;
-
     LPUNLOAD_DLL_DEBUG_INFO UnloadDll = ((PLUG_CB_UNLOADDLL*)info)->UnloadDll;
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "unload_dll");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pKwargs = Py_BuildValue(
-                      "{s:N}",
-                      "lpBaseOfDll", PyInt_FromSize_t((size_t)UnloadDll->lpBaseOfDll)
-                  );
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use unload_dll function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
+    pyCallback("unload_dll", Py_BuildValue(
+                   "{s:N}",
+                   "lpBaseOfDll", PyInt_FromSize_t((size_t)UnloadDll->lpBaseOfDll)
+               ));
 }
 
 static void cbLoadDllCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pLoadDll, *pPdbSig70, *pModInfo, *pKwargs, *pValue;
+    PyObject* pLoadDll, *pPdbSig70, *pModInfo;
 
     PLUG_CB_LOADDLL* callbackInfo = (PLUG_CB_LOADDLL*)info;
     LOAD_DLL_DEBUG_INFO* LoadDll = callbackInfo->LoadDll;
     IMAGEHLP_MODULE64* modInfo = callbackInfo->modInfo;
     GUID PdbSig70 = modInfo->PdbSig70;
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "load_dll");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pLoadDll = Py_BuildValue(
-                       "{s:N, s:N, s:k, s:k, s:N, s:H}",
-                       "hFile", PyInt_FromSize_t((size_t)LoadDll->hFile),
-                       "lpBaseOfDll", PyInt_FromSize_t((size_t)LoadDll->lpBaseOfDll),
-                       "dwDebugInfoFileOffset", LoadDll->dwDebugInfoFileOffset,
-                       "nDebugInfoSize", LoadDll->nDebugInfoSize,
-                       "lpImageName", PyInt_FromSize_t((size_t)LoadDll->lpImageName),
-                       "fUnicode", LoadDll->fUnicode
-                   );
-        pPdbSig70 = Py_BuildValue(
-                        "{s:k, s:H, s:H, s:N}",
-                        "Data1", PdbSig70.Data1,
-                        "Data2", PdbSig70.Data2,
-                        "Data3", PdbSig70.Data3,
-                        "Data4", PyByteArray_FromStringAndSize(
-                            (char*)PdbSig70.Data4, ARRAYSIZE(PdbSig70.Data4)
-                        )
-                    );
-        pModInfo = Py_BuildValue(
-                       "{s:k, s:K, s:k, s:k, s:k, s:k, s:i, s:s, s:s, s:s, s:s, "
-                       " s:k, s:s, s:k, s:N, s:k, s:N, s:N, s:N, s:N, s:N, s:N, s:N}",
-                       "SizeOfStruct", modInfo->SizeOfStruct,
-                       "BaseOfImage", modInfo->BaseOfImage,
-                       "ImageSize", modInfo->TimeDateStamp,
-                       "TimeDateStamp", modInfo->TimeDateStamp,
-                       "CheckSum", modInfo->CheckSum,
-                       "NumSyms", modInfo->NumSyms,
-                       "SymType", modInfo->SymType,
-                       "ModuleName", modInfo->ModuleName,
-                       "ImageName", modInfo->ImageName,
-                       "LoadedImageName", modInfo->LoadedImageName,
-                       "LoadedPdbName", modInfo->LoadedPdbName,
-                       "CVSig", modInfo->CVSig,
-                       "CVData", modInfo->CVData,
-                       "PdbSig", modInfo->PdbSig,
-                       "PdbSig70", pPdbSig70,
-                       "PdbAge", modInfo->PdbAge,
-                       "PdbUnmatched", PyBool_FromLong(modInfo->PdbUnmatched),
-                       "DbgUnmatched", PyBool_FromLong(modInfo->DbgUnmatched),
-                       "LineNumbers", PyBool_FromLong(modInfo->LineNumbers),
-                       "GlobalSymbols", PyBool_FromLong(modInfo->GlobalSymbols),
-                       "TypeInfo", PyBool_FromLong(modInfo->TypeInfo),
-                       "SourceIndexed", PyBool_FromLong(modInfo->SourceIndexed),
-                       "Publics", PyBool_FromLong(modInfo->Publics)
-                   );
-        pKwargs = Py_BuildValue(
-                      "{s:N, s:N, s:s}",
-                      "LoadDll", pLoadDll,
-                      "modInfo", pModInfo,
-                      "modname", callbackInfo->modname
-                  );
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pLoadDll);
-        Py_DECREF(pPdbSig70);
-        Py_DECREF(pModInfo);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use load_dll function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
+    pLoadDll = Py_BuildValue(
+                   "{s:N, s:N, s:k, s:k, s:N, s:H}",
+                   "hFile", PyInt_FromSize_t((size_t)LoadDll->hFile),
+                   "lpBaseOfDll", PyInt_FromSize_t((size_t)LoadDll->lpBaseOfDll),
+                   "dwDebugInfoFileOffset", LoadDll->dwDebugInfoFileOffset,
+                   "nDebugInfoSize", LoadDll->nDebugInfoSize,
+                   "lpImageName", PyInt_FromSize_t((size_t)LoadDll->lpImageName),
+                   "fUnicode", LoadDll->fUnicode
+               );
+    pPdbSig70 = Py_BuildValue(
+                    "{s:k, s:H, s:H, s:N}",
+                    "Data1", PdbSig70.Data1,
+                    "Data2", PdbSig70.Data2,
+                    "Data3", PdbSig70.Data3,
+                    "Data4", PyByteArray_FromStringAndSize(
+                        (char*)PdbSig70.Data4, ARRAYSIZE(PdbSig70.Data4)
+                    )
+                );
+    pModInfo = Py_BuildValue(
+                   "{s:k, s:K, s:k, s:k, s:k, s:k, s:i, s:s, s:s, s:s, s:s, "
+                   " s:k, s:s, s:k, s:N, s:k, s:N, s:N, s:N, s:N, s:N, s:N, s:N}",
+                   "SizeOfStruct", modInfo->SizeOfStruct,
+                   "BaseOfImage", modInfo->BaseOfImage,
+                   "ImageSize", modInfo->TimeDateStamp,
+                   "TimeDateStamp", modInfo->TimeDateStamp,
+                   "CheckSum", modInfo->CheckSum,
+                   "NumSyms", modInfo->NumSyms,
+                   "SymType", modInfo->SymType,
+                   "ModuleName", modInfo->ModuleName,
+                   "ImageName", modInfo->ImageName,
+                   "LoadedImageName", modInfo->LoadedImageName,
+                   "LoadedPdbName", modInfo->LoadedPdbName,
+                   "CVSig", modInfo->CVSig,
+                   "CVData", modInfo->CVData,
+                   "PdbSig", modInfo->PdbSig,
+                   "PdbSig70", pPdbSig70,
+                   "PdbAge", modInfo->PdbAge,
+                   "PdbUnmatched", PyBool_FromLong(modInfo->PdbUnmatched),
+                   "DbgUnmatched", PyBool_FromLong(modInfo->DbgUnmatched),
+                   "LineNumbers", PyBool_FromLong(modInfo->LineNumbers),
+                   "GlobalSymbols", PyBool_FromLong(modInfo->GlobalSymbols),
+                   "TypeInfo", PyBool_FromLong(modInfo->TypeInfo),
+                   "SourceIndexed", PyBool_FromLong(modInfo->SourceIndexed),
+                   "Publics", PyBool_FromLong(modInfo->Publics)
+               );
+    pyCallback("load_dll", Py_BuildValue(
+                   "{s:N, s:N, s:s}",
+                   "LoadDll", pLoadDll,
+                   "modInfo", pModInfo,
+                   "modname", callbackInfo->modname
+               ));
+    Py_DECREF(pLoadDll);
+    Py_DECREF(pPdbSig70);
+    Py_DECREF(pModInfo);
 }
 
 static void cbSystemBreakpointCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pValue;
-
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "system_breakpoint");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pValue = PyObject_CallObject(pFunc, NULL);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use system_breakpoint function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-        Py_DECREF(pValue);
-    }
+    pyCallback("system_breakpoint", PyDict_New());
 }
 
 static void cbExitThreadCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pKwargs, *pValue;
-
     PLUG_CB_EXITTHREAD* callbackInfo = ((PLUG_CB_EXITTHREAD*)info);
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "exit_thread");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pKwargs = Py_BuildValue(
-                      "{s:k, s:k}",
-                      "dwThreadId", callbackInfo->dwThreadId,
-                      "dwExitCode", callbackInfo->ExitThread->dwExitCode
-                  );
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use exit_thread function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
+    pyCallback("exit_thread", Py_BuildValue(
+                   "{s:k, s:k}",
+                   "dwThreadId", callbackInfo->dwThreadId,
+                   "dwExitCode", callbackInfo->ExitThread->dwExitCode
+               ));
 }
 
 static void cbCreateThreadCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pCreateThread, *pKwargs, *pValue;
+    PyObject* pCreateThread;
 
     PLUG_CB_CREATETHREAD* callbackInfo = (PLUG_CB_CREATETHREAD*)info;
     CREATE_THREAD_DEBUG_INFO* CreateThread = callbackInfo->CreateThread;
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
+    pCreateThread = Py_BuildValue(
+                        "{s:k, s:N, s:N}",
+                        "hThread", CreateThread->hThread,
+                        "lpThreadLocalBase", PyInt_FromSize_t((size_t)CreateThread->lpThreadLocalBase),
+                        "lpStartAddress", PyInt_FromSize_t((size_t)CreateThread->lpThreadLocalBase)
+                    );
+    pyCallback("create_thread", Py_BuildValue(
+                   "{s:k, s:N}",
+                   "dwThreadId", callbackInfo->dwThreadId,
+                   "CreateThread", pCreateThread
+               ));
+    Py_DECREF(pCreateThread);
 
-    pFunc = PyObject_GetAttrString(pEventObject, "create_thread");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pCreateThread = Py_BuildValue(
-                            "{s:k, s:N, s:N}",
-                            "hThread", CreateThread->hThread,
-                            "lpThreadLocalBase", PyInt_FromSize_t((size_t)CreateThread->lpThreadLocalBase),
-                            "lpStartAddress", PyInt_FromSize_t((size_t)CreateThread->lpThreadLocalBase)
-                        );
-        pKwargs = Py_BuildValue(
-                      "{s:k, s:N}",
-                      "dwThreadId", callbackInfo->dwThreadId,
-                      "CreateThread", pCreateThread
-                  );
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pCreateThread);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use exit_process function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
 }
 
 static void cbExitProcessCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pKwargs, *pValue;
-
     EXIT_PROCESS_DEBUG_INFO* ExitProcess = ((PLUG_CB_EXITPROCESS*)info)->ExitProcess;
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "exit_process");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pKwargs = Py_BuildValue(
-                      "{s:k}",
-                      "dwExitCode", ExitProcess->dwExitCode
-                  );
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use exit_process function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
+    pyCallback("exit_process", Py_BuildValue(
+                   "{s:k}",
+                   "dwExitCode", ExitProcess->dwExitCode
+               ));
 }
 
 static void cbCreateProcessCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pCreateProcessInfo, *pPdbSig70, *pModInfo, *pFdProcessInfo, *pKwargs, *pValue;
+    PyObject* pCreateProcessInfo, *pPdbSig70, *pModInfo, *pFdProcessInfo;
 
     PLUG_CB_CREATEPROCESS* callbackInfo = (PLUG_CB_CREATEPROCESS*)info;
     CREATE_PROCESS_DEBUG_INFO* CreateProcessInfo = callbackInfo->CreateProcessInfo;
@@ -507,156 +407,95 @@ static void cbCreateProcessCallback(CBTYPE cbType, void* info)
     PROCESS_INFORMATION* fdProcessInfo = callbackInfo->fdProcessInfo;
     GUID PdbSig70 = modInfo->PdbSig70;
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "create_process");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pCreateProcessInfo = Py_BuildValue(
-                                 "{s:N, s:N, s:N, s:N, s:k, s:k, s:N, s:N, s:N, s:H}",
-                                 "hFile", PyInt_FromSize_t((size_t)CreateProcessInfo->hFile),
-                                 "hProcess", PyInt_FromSize_t((size_t)CreateProcessInfo->hProcess),
-                                 "hThread", PyInt_FromSize_t((size_t)CreateProcessInfo->hThread),
-                                 "lpBaseOfImage", PyInt_FromSize_t((size_t)CreateProcessInfo->lpBaseOfImage),
-                                 "dwDebugInfoFileOffset", CreateProcessInfo->dwDebugInfoFileOffset,
-                                 "nDebugInfoSize", CreateProcessInfo->nDebugInfoSize,
-                                 "lpThreadLocalBase", PyInt_FromSize_t((size_t)CreateProcessInfo->lpThreadLocalBase),
-                                 "lpStartAddress", PyInt_FromSize_t((size_t)CreateProcessInfo->lpStartAddress),
-                                 "lpImageName", PyInt_FromSize_t((size_t)CreateProcessInfo->lpImageName),
-                                 "fUnicode", CreateProcessInfo->fUnicode
-                             );
-        pPdbSig70 = Py_BuildValue(
-                        "{s:k, s:H, s:H, s:N}",
-                        "Data1", PdbSig70.Data1,
-                        "Data2", PdbSig70.Data2,
-                        "Data3", PdbSig70.Data3,
-                        "Data4", PyByteArray_FromStringAndSize(
-                            (char*)PdbSig70.Data4, ARRAYSIZE(PdbSig70.Data4)
-                        )
-                    );
-        pModInfo = Py_BuildValue(
-                       "{s:k, s:K, s:k, s:k, s:k, s:k, s:i, s:s, s:s, s:s, s:s, "
-                       " s:k, s:s, s:k, s:N, s:k, s:N, s:N, s:N, s:N, s:N, s:N, s:N}",
-                       "SizeOfStruct", modInfo->SizeOfStruct,
-                       "BaseOfImage", modInfo->BaseOfImage,
-                       "ImageSize", modInfo->TimeDateStamp,
-                       "TimeDateStamp", modInfo->TimeDateStamp,
-                       "CheckSum", modInfo->CheckSum,
-                       "NumSyms", modInfo->NumSyms,
-                       "SymType", modInfo->SymType,
-                       "ModuleName", modInfo->ModuleName,
-                       "ImageName", modInfo->ImageName,
-                       "LoadedImageName", modInfo->LoadedImageName,
-                       "LoadedPdbName", modInfo->LoadedPdbName,
-                       "CVSig", modInfo->CVSig,
-                       "CVData", modInfo->CVData,
-                       "PdbSig", modInfo->PdbSig,
-                       "PdbSig70", pPdbSig70,
-                       "PdbAge", modInfo->PdbAge,
-                       "PdbUnmatched", PyBool_FromLong(modInfo->PdbUnmatched),
-                       "DbgUnmatched", PyBool_FromLong(modInfo->DbgUnmatched),
-                       "LineNumbers", PyBool_FromLong(modInfo->LineNumbers),
-                       "GlobalSymbols", PyBool_FromLong(modInfo->GlobalSymbols),
-                       "TypeInfo", PyBool_FromLong(modInfo->TypeInfo),
-                       "SourceIndexed", PyBool_FromLong(modInfo->SourceIndexed),
-                       "Publics", PyBool_FromLong(modInfo->Publics)
-                   );
-        pFdProcessInfo = Py_BuildValue(
-                             "{s:N, s:N, s:k, s:k}",
-                             "hProcess", PyInt_FromSize_t((size_t)fdProcessInfo->hProcess),
-                             "hThread", PyInt_FromSize_t((size_t)fdProcessInfo->hThread),
-                             "dwProcessId", fdProcessInfo->dwProcessId,
-                             "dwThreadId", fdProcessInfo->dwThreadId
+    pCreateProcessInfo = Py_BuildValue(
+                             "{s:N, s:N, s:N, s:N, s:k, s:k, s:N, s:N, s:N, s:H}",
+                             "hFile", PyInt_FromSize_t((size_t)CreateProcessInfo->hFile),
+                             "hProcess", PyInt_FromSize_t((size_t)CreateProcessInfo->hProcess),
+                             "hThread", PyInt_FromSize_t((size_t)CreateProcessInfo->hThread),
+                             "lpBaseOfImage", PyInt_FromSize_t((size_t)CreateProcessInfo->lpBaseOfImage),
+                             "dwDebugInfoFileOffset", CreateProcessInfo->dwDebugInfoFileOffset,
+                             "nDebugInfoSize", CreateProcessInfo->nDebugInfoSize,
+                             "lpThreadLocalBase", PyInt_FromSize_t((size_t)CreateProcessInfo->lpThreadLocalBase),
+                             "lpStartAddress", PyInt_FromSize_t((size_t)CreateProcessInfo->lpStartAddress),
+                             "lpImageName", PyInt_FromSize_t((size_t)CreateProcessInfo->lpImageName),
+                             "fUnicode", CreateProcessInfo->fUnicode
                          );
-        pKwargs = Py_BuildValue(
-                      "{s:N, s:N, s:s, s:N}",
-                      "CreateProcessInfo", pCreateProcessInfo,
-                      "modInfo", pModInfo,
-                      "DebugFileName", callbackInfo->DebugFileName,
-                      "fdProcessInfo", pFdProcessInfo
-                  );
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pCreateProcessInfo);
-        Py_DECREF(pPdbSig70);
-        Py_DECREF(pModInfo);
-        Py_DECREF(pFdProcessInfo);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use create_process function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
+    pPdbSig70 = Py_BuildValue(
+                    "{s:k, s:H, s:H, s:N}",
+                    "Data1", PdbSig70.Data1,
+                    "Data2", PdbSig70.Data2,
+                    "Data3", PdbSig70.Data3,
+                    "Data4", PyByteArray_FromStringAndSize(
+                        (char*)PdbSig70.Data4, ARRAYSIZE(PdbSig70.Data4)
+                    )
+                );
+    pModInfo = Py_BuildValue(
+                   "{s:k, s:K, s:k, s:k, s:k, s:k, s:i, s:s, s:s, s:s, s:s, "
+                   " s:k, s:s, s:k, s:N, s:k, s:N, s:N, s:N, s:N, s:N, s:N, s:N}",
+                   "SizeOfStruct", modInfo->SizeOfStruct,
+                   "BaseOfImage", modInfo->BaseOfImage,
+                   "ImageSize", modInfo->TimeDateStamp,
+                   "TimeDateStamp", modInfo->TimeDateStamp,
+                   "CheckSum", modInfo->CheckSum,
+                   "NumSyms", modInfo->NumSyms,
+                   "SymType", modInfo->SymType,
+                   "ModuleName", modInfo->ModuleName,
+                   "ImageName", modInfo->ImageName,
+                   "LoadedImageName", modInfo->LoadedImageName,
+                   "LoadedPdbName", modInfo->LoadedPdbName,
+                   "CVSig", modInfo->CVSig,
+                   "CVData", modInfo->CVData,
+                   "PdbSig", modInfo->PdbSig,
+                   "PdbSig70", pPdbSig70,
+                   "PdbAge", modInfo->PdbAge,
+                   "PdbUnmatched", PyBool_FromLong(modInfo->PdbUnmatched),
+                   "DbgUnmatched", PyBool_FromLong(modInfo->DbgUnmatched),
+                   "LineNumbers", PyBool_FromLong(modInfo->LineNumbers),
+                   "GlobalSymbols", PyBool_FromLong(modInfo->GlobalSymbols),
+                   "TypeInfo", PyBool_FromLong(modInfo->TypeInfo),
+                   "SourceIndexed", PyBool_FromLong(modInfo->SourceIndexed),
+                   "Publics", PyBool_FromLong(modInfo->Publics)
+               );
+    pFdProcessInfo = Py_BuildValue(
+                         "{s:N, s:N, s:k, s:k}",
+                         "hProcess", PyInt_FromSize_t((size_t)fdProcessInfo->hProcess),
+                         "hThread", PyInt_FromSize_t((size_t)fdProcessInfo->hThread),
+                         "dwProcessId", fdProcessInfo->dwProcessId,
+                         "dwThreadId", fdProcessInfo->dwThreadId
+                     );
+    pyCallback("create_process", Py_BuildValue(
+                   "{s:N, s:N, s:s, s:N}",
+                   "CreateProcessInfo", pCreateProcessInfo,
+                   "modInfo", pModInfo,
+                   "DebugFileName", callbackInfo->DebugFileName,
+                   "fdProcessInfo", pFdProcessInfo
+               ));
+    Py_DECREF(pCreateProcessInfo);
+    Py_DECREF(pPdbSig70);
+    Py_DECREF(pModInfo);
+    Py_DECREF(pFdProcessInfo);
 }
 
 static void cbBreakPointCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pKwargs, *pValue;
-
     BRIDGEBP* breakpoint = ((PLUG_CB_BREAKPOINT*)info)->breakpoint;
 
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "breakpoint");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pKwargs = Py_BuildValue(
-                      "{s:i, s:N, s:N, s:N, s:N, s:s, s:s, s:i}",
-                      "type", breakpoint->type,
-                      "addr", PyInt_FromSize_t(breakpoint->addr),
-                      "enabled", PyBool_FromLong(breakpoint->enabled),
-                      "singleshoot", PyBool_FromLong(breakpoint->singleshoot),
-                      "active", PyBool_FromLong(breakpoint->active),
-                      "mod", breakpoint->mod,
-                      "name", breakpoint->name,
-                      "slot", breakpoint->slot
-                  );
-
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use breakpoint function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-
-        Py_DECREF(pValue);
-    }
+    pyCallback("breakpoint", Py_BuildValue(
+                   "{s:i, s:N, s:N, s:N, s:N, s:s, s:s, s:i}",
+                   "type", breakpoint->type,
+                   "addr", PyInt_FromSize_t(breakpoint->addr),
+                   "enabled", PyBool_FromLong(breakpoint->enabled),
+                   "singleshoot", PyBool_FromLong(breakpoint->singleshoot),
+                   "active", PyBool_FromLong(breakpoint->active),
+                   "mod", breakpoint->mod,
+                   "name", breakpoint->name,
+                   "slot", breakpoint->slot
+               ));
 }
 
 static void cbStopDebugCallback(CBTYPE cbType, void* info)
 {
-    PyObject* pFunc;
-    PyObject* pValue;
-
-    // Check if event object exist.
-    if(pEventObject == NULL)
-        return;
-
-    pFunc = PyObject_GetAttrString(pEventObject, "stop_debug");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pValue = PyObject_CallObject(pFunc, NULL);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use stop_debug function.");
-            PyErr_PrintEx(0);
-            return;
-        }
-        Py_DECREF(pValue);
-    }
+    pyCallback("stop_debug", PyDict_New());
 }
 
 static std::wstring makeX64dbgPackageDir(const std::wstring & directory)

@@ -1,5 +1,6 @@
 import functools
 import pluginsdk._scriptapi
+from utils import Singleton
 from pluginsdk.bridgemain import GuiUpdateAllViews
 
 
@@ -11,6 +12,8 @@ FLAGS = (
 
 
 class Flag(object):
+    __metaclass__ = Singleton
+
     def __init__(self, refresh_gui=True):
         self.refresh_gui = refresh_gui
 

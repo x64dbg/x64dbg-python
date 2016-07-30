@@ -2,6 +2,7 @@
 # from os import path
 # import runpy
 # import glob
+from utils import Singleton
 
 EVENTS = [
     # 'init_debug',
@@ -17,6 +18,8 @@ EVENTS = [
 ]
 
 class Event(object):
+    __metaclass__ = Singleton
+
     def __init__(self):
         # Keys: type, addr, enabled, singleshoot, active, name, mod, slot
         # typedef struct
