@@ -28,6 +28,10 @@ extern "C" __declspec(dllexport) void CBMENUENTRY(CBTYPE cbType, PLUG_CB_MENUENT
         DbgCmdExec("OpenScript");
         break;
 
+    case MENU_OPENASYNC:
+        DbgCmdExec("OpenScriptAsync");
+        break;
+
     case MENU_ABOUT:
         MessageBoxA(hwndDlg, "Made By RealGame(Tomer Zait)", plugin_name " Plugin", MB_ICONINFORMATION);
         break;
@@ -218,6 +222,18 @@ static void OpenScript()
 static bool cbOpenScriptCommand(int argc, char* argv[])
 {
     GuiExecuteOnGuiThread(OpenScript);
+    return true;
+}
+
+static DWORD WINAPI asyncThread(void*)
+{
+    OpenScript();
+    return 0;
+}
+
+static bool cbOpenScriptAsyncCommand(int argc, char* argv[])
+{
+    CloseHandle(CreateThread(nullptr, 0, asyncThread, nullptr, 0, nullptr));
     return true;
 }
 
@@ -594,6 +610,8 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
         _plugin_logputs("[PYTHON] error registering the \"Python\" command!");
     if(!_plugin_registercommand(pluginHandle, "OpenScript", cbOpenScriptCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"OpenScript\" command!");
+    if(!_plugin_registercommand(pluginHandle, "OpenScriptAsync", cbOpenScriptAsyncCommand, false))
+        _plugin_logputs("[PYTHON] error registering the \"OpenScriptAsync\" command!");
     if(!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
     _plugin_registercommand(pluginHandle, "PythonDebug", [](int argc, char* argv[])
@@ -694,7 +712,8 @@ void pySetup()
     _plugin_menuseticon(hMenu, &pyIcon);
 
     FreeResource(hMem);
-    _plugin_menuaddentry(hMenu, MENU_OPEN, "&Open Script...\tAlt+F7");
+    _plugin_menuaddentry(hMenu, MENU_OPEN, "&Open GUI Script...\tAlt+F7");
+    _plugin_menuaddentry(hMenu, MENU_OPENASYNC, "Open Async Script...");
     _plugin_menuaddentry(hMenu, MENU_ABOUT, "&About");
 
     // Set Callbacks
