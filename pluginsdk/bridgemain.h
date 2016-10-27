@@ -122,7 +122,8 @@ typedef enum
     bp_normal = 1,
     bp_hardware = 2,
     bp_memory = 4,
-    bp_dll = 8
+    bp_dll = 8,
+    bp_exception = 16
 } BPXTYPE;
 
 typedef enum
@@ -227,7 +228,8 @@ typedef enum
     DBG_ARGUMENT_OVERLAPS,          // param1=FUNCTION* info,            param2=unused
     DBG_ARGUMENT_ADD,               // param1=FUNCTION* info,            param2=unused
     DBG_ARGUMENT_DEL,               // param1=FUNCTION* info,            param2=unused
-    DBG_GET_WATCH_LIST              // param1=ListOf(WATCHINFO),         param2=unused
+    DBG_GET_WATCH_LIST,             // param1=ListOf(WATCHINFO),         param2=unused
+    DBG_SELCHANGED                  // param1=hWindow,                   param2=VA
 } DBGMSG;
 
 typedef enum
@@ -765,8 +767,8 @@ typedef struct
 //Debugger functions
 BRIDGE_IMPEXP const char* DbgInit();
 BRIDGE_IMPEXP void DbgExit();
-BRIDGE_IMPEXP bool DbgMemRead(duint va, unsigned char* dest, duint size);
-BRIDGE_IMPEXP bool DbgMemWrite(duint va, const unsigned char* src, duint size);
+BRIDGE_IMPEXP bool DbgMemRead(duint va, void* dest, duint size);
+BRIDGE_IMPEXP bool DbgMemWrite(duint va, const void* src, duint size);
 BRIDGE_IMPEXP duint DbgMemGetPageSize(duint base);
 BRIDGE_IMPEXP duint DbgMemFindBaseAddr(duint addr, duint* size);
 BRIDGE_IMPEXP bool DbgCmdExec(const char* cmd);
@@ -857,6 +859,7 @@ BRIDGE_IMPEXP bool DbgSetEncodeType(duint addr, duint size, ENCODETYPE type);
 BRIDGE_IMPEXP void DbgDelEncodeTypeRange(duint start, duint end);
 BRIDGE_IMPEXP void DbgDelEncodeTypeSegment(duint start);
 BRIDGE_IMPEXP bool DbgGetWatchList(ListOf(WATCHINFO) list);
+BRIDGE_IMPEXP void DbgSelChanged(int hWindow, duint VA);
 
 //Gui defines
 #define GUI_PLUGIN_MENU 0
@@ -867,6 +870,9 @@ BRIDGE_IMPEXP bool DbgGetWatchList(ListOf(WATCHINFO) list);
 #define GUI_DISASSEMBLY 0
 #define GUI_DUMP 1
 #define GUI_STACK 2
+#define GUI_GRAPH 3
+#define GUI_MEMMAP 4
+#define GUI_SYMMOD 5
 
 #define GUI_MAX_LINE_SIZE 65536
 #define GUI_MAX_DISASSEMBLY_SIZE 2048
@@ -961,7 +967,10 @@ typedef enum
     GUI_ADD_FAVOURITE_COMMAND,      // param1=const char* command   param2=const char* shortcut
     GUI_SET_FAVOURITE_TOOL_SHORTCUT,// param1=const char* name      param2=const char* shortcut
     GUI_FOLD_DISASSEMBLY,           // param1=duint startAddress    param2=duint length
-    GUI_SELECT_IN_MEMORY_MAP        // param1=duint addr,           param2=unused
+    GUI_SELECT_IN_MEMORY_MAP,       // param1=duint addr,           param2=unused
+    GUI_GET_ACTIVE_VIEW,            // param1=ACTIVEVIEW*,          param2=unused
+    GUI_MENU_SET_ENTRY_CHECKED,     // param1=int hEntry,           param2=bool checked
+    GUI_ADD_INFO_LINE               // param1=const char* infoline, param2=unused
 } GUIMSG;
 
 //GUI Typedefs
@@ -996,6 +1005,14 @@ typedef struct
     GUISCRIPTEXECUTE execute;
     GUISCRIPTCOMPLETER completeCommand;
 } SCRIPTTYPEINFO;
+
+typedef struct
+{
+    void* titleHwnd;
+    void* classHwnd;
+    char title[MAX_STRING_SIZE];
+    char className[MAX_STRING_SIZE];
+} ACTIVEVIEW;
 
 //GUI functions
 //code page is utf8
@@ -1064,6 +1081,7 @@ BRIDGE_IMPEXP void GuiUpdateSEHChain();
 BRIDGE_IMPEXP void GuiLoadSourceFile(const char* path, int line);
 BRIDGE_IMPEXP void GuiMenuSetIcon(int hMenu, const ICONDATA* icon);
 BRIDGE_IMPEXP void GuiMenuSetEntryIcon(int hEntry, const ICONDATA* icon);
+BRIDGE_IMPEXP void GuiMenuSetEntryChecked(int hEntry, bool checked);
 BRIDGE_IMPEXP void GuiShowCpu();
 BRIDGE_IMPEXP void GuiAddQWidgetTab(void* qWidget);
 BRIDGE_IMPEXP void GuiShowQWidgetTab(void* qWidget);
@@ -1084,7 +1102,7 @@ BRIDGE_IMPEXP bool GuiIsUpdateDisabled();
 BRIDGE_IMPEXP void GuiUpdateEnable(bool updateNow);
 BRIDGE_IMPEXP void GuiUpdateDisable();
 BRIDGE_IMPEXP void GuiLoadGraph(BridgeCFGraphList* graph, duint addr);
-BRIDGE_IMPEXP bool GuiGraphAt(duint addr);
+BRIDGE_IMPEXP duint GuiGraphAt(duint addr);
 BRIDGE_IMPEXP void GuiUpdateGraphView();
 BRIDGE_IMPEXP void GuiDisableLog();
 BRIDGE_IMPEXP void GuiEnableLog();
@@ -1093,6 +1111,8 @@ BRIDGE_IMPEXP void GuiAddFavouriteCommand(const char* name, const char* shortcut
 BRIDGE_IMPEXP void GuiSetFavouriteToolShortcut(const char* name, const char* shortcut);
 BRIDGE_IMPEXP void GuiFoldDisassembly(duint startAddress, duint length);
 BRIDGE_IMPEXP void GuiSelectInMemoryMap(duint addr);
+BRIDGE_IMPEXP void GuiGetActiveView(ACTIVEVIEW* activeView);
+BRIDGE_IMPEXP void GuiAddInfoLine(const char* infoLine);
 
 #ifdef __cplusplus
 }
