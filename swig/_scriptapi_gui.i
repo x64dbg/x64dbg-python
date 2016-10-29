@@ -23,6 +23,10 @@
 %rename(Stack_SelectionGetStart) Script::Gui::Stack::SelectionGetStart;
 %rename(Stack_SelectionGetEnd) Script::Gui::Stack::SelectionGetEnd;
 
+%rename(Graph_SelectionGetStart) Script::Gui::Graph::SelectionGetStart;
+%rename(MemMap_SelectionGetStart) Script::Gui::MemMap::SelectionGetStart;
+%rename(SymMod_SelectionGetStart) Script::Gui::SymMod::SelectionGetStart;
+
 %apply duint *OUTPUT { duint *value };
 %apply duint *OUTPUT { duint *start };
 %apply duint *OUTPUT { duint *end };
