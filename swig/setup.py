@@ -23,13 +23,10 @@ setup(
     packages=[
         'x64dbgpy',
         'x64dbgpy.pluginsdk',
-        'x64dbgpy.pluginsdk._scriptapi',
-        'x64dbg_editor',
-        'x64dbg_editor.icons',
+        'x64dbgpy.pluginsdk._scriptapi'
     ],
     package_data={
-        'x64dbgpy': ['autorun/*'],
-        'x64dbg_editor': ['python.api']
+        'x64dbgpy': ['autorun/*']
     },
     ext_modules=[Extension(
         r'x64dbgpy.pluginsdk._x64dbg', [r'x64dbg.i'],
