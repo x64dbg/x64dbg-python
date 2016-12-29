@@ -20,20 +20,27 @@
 PyObject* pModule, *pEventObject;
 HINSTANCE hInst;
 
+enum
+{
+    MENU_RUNSCRIPTASYNC,
+    MENU_RUNGUISCRIPT,
+    MENU_ABOUT
+};
+
 extern "C" __declspec(dllexport) void CBMENUENTRY(CBTYPE cbType, PLUG_CB_MENUENTRY* info)
 {
     switch(info->hEntry)
     {
-    case MENU_OPEN:
-        DbgCmdExec("OpenScript");
+    case MENU_RUNSCRIPTASYNC:
+        DbgCmdExec("PyRunScriptAsync");
         break;
 
-    case MENU_OPENASYNC:
-        DbgCmdExec("OpenScriptAsync");
+    case MENU_RUNGUISCRIPT:
+        DbgCmdExec("PyRunGuiScript");
         break;
 
     case MENU_ABOUT:
-        MessageBoxA(hwndDlg, "Made By RealGame(Tomer Zait)", plugin_name " Plugin", MB_ICONINFORMATION);
+        MessageBoxA(hwndDlg, "Made By RealGame (Tomer Zait)", plugin_name " Plugin", MB_ICONINFORMATION);
         break;
     }
 }
@@ -63,55 +70,6 @@ static void pyCallback(const char* eventName, PyObject* pKwargs)
     }
 }
 
-static bool cbPythonCommand(int argc, char* argv[])
-{
-    if(argc < 2)
-    {
-        _plugin_logputs("[PYTHON] Command Example: Python \"print('Hello World')\".");
-        return false;
-    }
-    PyRun_SimpleString(argv[1]);
-    return true;
-}
-
-static bool cbPipCommand(int argc, char* argv[])
-{
-    PyObject* pUtilsModule, *pFunc;
-    PyObject* pKwargs, /* *pArgs, */ *pValue;
-
-    if(argc < 2)
-    {
-        _plugin_logputs("[PYTHON] Command Example: Pip freeze");
-        return false;
-    }
-
-    // Import utils
-    pUtilsModule = PyObject_GetAttrString(pModule, "utils");
-    if(pEventObject == NULL)
-    {
-        _plugin_logputs("[PYTHON] Could not find utils package.");
-        PyErr_PrintEx(0);
-        return false;
-    }
-
-    pFunc = PyObject_GetAttrString(pUtilsModule, "x64dbg_pip");
-    if(pFunc && PyCallable_Check(pFunc))
-    {
-        pKwargs = Py_BuildValue("{s:s}", "args", argv[0]);
-        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
-        Py_DECREF(pKwargs);
-        Py_DECREF(pFunc);
-        if(pValue == NULL)
-        {
-            _plugin_logputs("[PYTHON] Could not use x64dbg_pip function.");
-            PyErr_PrintEx(0);
-            return false;
-        }
-        Py_DECREF(pValue);
-    }
-    return true;
-}
-
 static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
 {
     OPENFILENAMEW sOpenFileName = { 0 };
@@ -134,7 +92,7 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
     PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
     if(PyFileObject == NULL)
     {
-        _plugin_logprintf("[PYTHON] Could not open file....");
+        _plugin_logputs("[PYTHON] Could not open file....");
         PyErr_PrintEx(0);
         return false;
     }
@@ -204,35 +162,103 @@ extern "C" __declspec(dllexport) bool ExecutePythonScriptW(const wchar_t* szFile
     return ExecutePythonScript(szFileName);
 }
 
-// OpenScript [EntryPointVA]
-static void OpenScript()
-{
-    wchar_t szFileName[MAX_PATH] = { 0 };
-    if(!OpenFileDialog(szFileName))
-        return;
+// Command callbacks
+static std::wstring szScriptName;
 
-    ExecutePythonScript(szFileName);
-}
-
-static bool cbOpenScriptCommand(int argc, char* argv[])
+static bool openScriptName(int argc, char* argv[])
 {
-    GuiExecuteOnGuiThread(OpenScript);
+    if(argc < 2)
+    {
+        wchar_t szFileName[MAX_PATH] = L"";
+        if(!OpenFileDialog(szFileName))
+            return false;
+        szScriptName = szFileName;
+    }
+    else
+        szScriptName = Utf8ToUtf16(argv[1]);
     return true;
 }
 
-static DWORD WINAPI asyncThread(void*)
+static bool cbPythonCommand(int argc, char* argv[])
 {
-    OpenScript();
-    return 0;
-}
-
-static bool cbOpenScriptAsyncCommand(int argc, char* argv[])
-{
-    CloseHandle(CreateThread(nullptr, 0, asyncThread, nullptr, 0, nullptr));
+    if(argc < 2)
+    {
+        _plugin_logputs("[PYTHON] Command Example: Python \"print('Hello World')\".");
+        return false;
+    }
+    PyRun_SimpleString(argv[1]);
     return true;
 }
 
-static bool cbPythonCommandType(const char* cmd)
+static bool cbPipCommand(int argc, char* argv[])
+{
+    PyObject* pUtilsModule, *pFunc;
+    PyObject* pKwargs, /* *pArgs, */ *pValue;
+
+    if(argc < 2)
+    {
+        _plugin_logputs("[PYTHON] Command Example: Pip freeze");
+        return false;
+    }
+
+    // Import utils
+    pUtilsModule = PyObject_GetAttrString(pModule, "utils");
+    if(pEventObject == NULL)
+    {
+        _plugin_logputs("[PYTHON] Could not find utils package.");
+        PyErr_PrintEx(0);
+        return false;
+    }
+
+    pFunc = PyObject_GetAttrString(pUtilsModule, "x64dbg_pip");
+    if(pFunc && PyCallable_Check(pFunc))
+    {
+        pKwargs = Py_BuildValue("{s:s}", "args", argv[0]);
+        pValue = PyObject_Call(pFunc, PyTuple_New(0), pKwargs);
+        Py_DECREF(pKwargs);
+        Py_DECREF(pFunc);
+        if(pValue == NULL)
+        {
+            _plugin_logputs("[PYTHON] Could not use x64dbg_pip function.");
+            PyErr_PrintEx(0);
+            return false;
+        }
+        Py_DECREF(pValue);
+    }
+    return true;
+}
+
+static bool cbPyRunScriptCommand(int argc, char* argv[])
+{
+    if(!openScriptName(argc, argv))
+        return false;
+    return ExecutePythonScript(szScriptName.c_str());
+}
+
+static bool cbPyRunScriptAsyncCommand(int argc, char* argv[])
+{
+    if(!openScriptName(argc, argv))
+        return false;
+    CloseHandle(CreateThread(nullptr, 0, [](void*) -> DWORD
+    {
+        ExecutePythonScript(szScriptName.c_str());
+        return 0;
+    }, nullptr, 0, nullptr));
+    return true;
+}
+
+static bool cbPyRunGuiScriptCommand(int argc, char* argv[])
+{
+    if(!openScriptName(argc, argv))
+        return false;
+    GuiExecuteOnGuiThread([]()
+    {
+        ExecutePythonScript(szScriptName.c_str());
+    });
+    return true;
+}
+
+static bool cbPythonCommandExecute(const char* cmd)
 {
     if(cmd)
     {
@@ -252,7 +278,7 @@ static void cbWinEventCallback(CBTYPE cbType, void* info)
         switch(msg->lParam)
         {
         case ALT_F7_SYSKEYDOWN:
-            GuiExecuteOnGuiThread(OpenScript);
+            DbgCmdExec("PyRunGuiScript");
             break;
         }
         break;
@@ -592,29 +618,32 @@ static bool findX64dbgPythonHome(std::wstring & home)
 
 bool pyInit(PLUG_INITSTRUCT* initStruct)
 {
-    _plugin_logprintf("[PYTHON] pluginHandle: %d\n", pluginHandle);
-
+    // Register python command handler
     SCRIPTTYPEINFO info;
     strcpy_s(info.name, "Python");
     info.id = 0;
-    info.execute = cbPythonCommandType;
+    info.execute = cbPythonCommandExecute;
     info.completeCommand = nullptr;
     GuiRegisterScriptLanguage(&info);
 
-    if(!_plugin_registercommand(pluginHandle, "Python", cbPythonCommand, false))
-        _plugin_logputs("[PYTHON] error registering the \"Python\" command!");
-    if(!_plugin_registercommand(pluginHandle, "OpenScript", cbOpenScriptCommand, false))
-        _plugin_logputs("[PYTHON] error registering the \"OpenScript\" command!");
-    if(!_plugin_registercommand(pluginHandle, "OpenScriptAsync", cbOpenScriptAsyncCommand, false))
-        _plugin_logputs("[PYTHON] error registering the \"OpenScriptAsync\" command!");
-    if(!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
-        _plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
-    _plugin_registercommand(pluginHandle, "PythonDebug", [](int argc, char* argv[])
+    // Register commands
+    auto regCmd = [](const char* command, CBPLUGINCOMMAND cbCommand)
+    {
+        if(!_plugin_registercommand(pluginHandle, command, cbCommand, false))
+            _plugin_logputs((std::string("[PYTHON] error registering the \"") + command + std::string("\" command!")).c_str());
+    };
+
+    regCmd("Python", cbPythonCommand);
+    regCmd("Pip", cbPipCommand);
+    regCmd("PyRunScript", cbPyRunScriptCommand);
+    regCmd("PyRunScriptAsync", cbPyRunScriptAsyncCommand);
+    regCmd("PyRunGuiScript", cbPyRunGuiScriptCommand);
+    regCmd("PyDebug", [](int argc, char* argv[])
     {
         Py_DebugFlag = 1;
         Py_VerboseFlag = 1;
         return true;
-    }, false);
+    });
 
     // Find and set the PythonHome
     std::wstring home;
@@ -670,26 +699,6 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 
 void pyStop()
 {
-    _plugin_unregistercommand(pluginHandle, "OpenScript");
-    _plugin_unregistercommand(pluginHandle, "Pip");
-
-    _plugin_menuclear(hMenu);
-    _plugin_menuclear(hMenuDisasm);
-    _plugin_menuclear(hMenuDump);
-    _plugin_menuclear(hMenuStack);
-
-    _plugin_unregistercallback(pluginHandle, CB_WINEVENT);
-    _plugin_unregistercallback(pluginHandle, CB_INITDEBUG);
-    _plugin_unregistercallback(pluginHandle, CB_BREAKPOINT);
-    _plugin_unregistercallback(pluginHandle, CB_STOPDEBUG);
-    _plugin_unregistercallback(pluginHandle, CB_CREATEPROCESS);
-    _plugin_unregistercallback(pluginHandle, CB_EXITPROCESS);
-    _plugin_unregistercallback(pluginHandle, CB_CREATETHREAD);
-    _plugin_unregistercallback(pluginHandle, CB_EXITTHREAD);
-    _plugin_unregistercallback(pluginHandle, CB_SYSTEMBREAKPOINT);
-    _plugin_unregistercallback(pluginHandle, CB_LOADDLL);
-    _plugin_unregistercallback(pluginHandle, CB_UNLOADDLL);
-
     // Properly ends the python environment
     Py_Finalize();
 }
@@ -707,8 +716,8 @@ void pySetup()
     _plugin_menuseticon(hMenu, &pyIcon);
 
     FreeResource(hMem);
-    _plugin_menuaddentry(hMenu, MENU_OPEN, "&Open GUI Script...\tAlt+F7");
-    _plugin_menuaddentry(hMenu, MENU_OPENASYNC, "Open Async Script...");
+    _plugin_menuaddentry(hMenu, MENU_RUNGUISCRIPT, "&Open GUI Script...\tAlt+F7");
+    _plugin_menuaddentry(hMenu, MENU_RUNSCRIPTASYNC, "Open Async Script...");
     _plugin_menuaddentry(hMenu, MENU_ABOUT, "&About");
 
     // Set Callbacks

@@ -5,11 +5,6 @@
 
 extern HINSTANCE hInst;
 
-//menu identifiers
-#define MENU_OPEN 0
-#define MENU_ABOUT 1
-#define MENU_OPENASYNC 2
-
 //functions
 bool pyInit(PLUG_INITSTRUCT* initStruct);
 void pyStop();
