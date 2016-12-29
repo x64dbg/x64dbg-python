@@ -86,8 +86,20 @@ static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
     return (FALSE != GetOpenFileNameW(&sOpenFileName));
 }
 
+static bool FileExists(const wchar_t* file)
+{
+    DWORD attrib = GetFileAttributesW(file);
+    return (attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
 static bool ExecutePythonScript(const wchar_t* szFileName)
 {
+    if(!FileExists(szFileName))
+    {
+        _plugin_logputs("[PYTHON] File does not exist...");
+        return false;
+    }
+
     std::vector<wchar_t> szShortFileName;
     szShortFileName.resize(wcslen(szFileName) * 2);
     GetShortPathNameW(szFileName, szShortFileName.data(), DWORD(szShortFileName.size()));
@@ -157,11 +169,13 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
 // Exports for other plugins
 extern "C" __declspec(dllexport) bool ExecutePythonScriptA(const char* szFileName)
 {
+    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", szFileName);
     return ExecutePythonScript(Utf8ToUtf16(szFileName).c_str());
 }
 
 extern "C" __declspec(dllexport) bool ExecutePythonScriptW(const wchar_t* szFileName)
 {
+    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szFileName).c_str());
     return ExecutePythonScript(szFileName);
 }
 
@@ -235,6 +249,7 @@ static bool cbPyRunScriptCommand(int argc, char* argv[])
 {
     if(!openScriptName(argc, argv))
         return false;
+    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
     return ExecutePythonScript(szScriptName.c_str());
 }
 
@@ -244,6 +259,7 @@ static bool cbPyRunScriptAsyncCommand(int argc, char* argv[])
         return false;
     CloseHandle(CreateThread(nullptr, 0, [](void*) -> DWORD
     {
+        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
         ExecutePythonScript(szScriptName.c_str());
         return 0;
     }, nullptr, 0, nullptr));
@@ -256,6 +272,7 @@ static bool cbPyRunGuiScriptCommand(int argc, char* argv[])
         return false;
     GuiExecuteOnGuiThread([]()
     {
+        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
         ExecutePythonScript(szScriptName.c_str());
     });
     return true;
@@ -309,7 +326,7 @@ static void cbInitDebugCallback(CBTYPE cbType, void* info)
     {
         do
         {
-            _plugin_logprintf("[PYTHON] Executing autorun file: '%ws'.\n", FindFileData.cFileName);
+            _plugin_logprintf("[PYTHON] Executing autorun file: \"%s\".\n", Utf16ToUtf8(FindFileData.cFileName).c_str());
             ExecutePythonScript(FindFileData.cFileName);
         }
         while(FindNextFileW(hFind, &FindFileData) != 0);
