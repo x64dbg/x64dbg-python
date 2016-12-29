@@ -134,7 +134,7 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
     PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
     if(PyFileObject == NULL)
     {
-        _plugin_logprintf("[PYTHON] Could not open file....");
+        _plugin_logprintf("[PYTHON] Could not open file.... \n");
         PyErr_PrintEx(0);
         return false;
     }
@@ -219,6 +219,26 @@ static bool cbOpenScriptCommand(int argc, char* argv[])
     GuiExecuteOnGuiThread(OpenScript);
     return true;
 }
+/*
+Author: mugundhan
+
+To run Python script from console without dialog window
+Usage:py <script.py>
+
+*/
+static bool cbPyRunScript(int argc, char* argv[])
+{
+	if (argc < 2)
+	{
+		_plugin_logputs("[PYTHON] Command Example: Py <script.py> ");
+		return false;
+	}
+	_plugin_logprintf("Running  :%s \n", argv[1]);
+	
+	return ExecutePythonScript(Utf8ToUtf16(argv[1]).c_str());	
+
+}
+
 
 static DWORD WINAPI asyncThread(void*)
 {
@@ -607,8 +627,11 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
         _plugin_logputs("[PYTHON] error registering the \"OpenScript\" command!");
     if(!_plugin_registercommand(pluginHandle, "OpenScriptAsync", cbOpenScriptAsyncCommand, false))
         _plugin_logputs("[PYTHON] error registering the \"OpenScriptAsync\" command!");
-    if(!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
-        _plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
+	if (!_plugin_registercommand(pluginHandle, "Pip", cbPipCommand, false))
+		_plugin_logputs("[PYTHON] error registering the \"Pip\" command!");
+	if (!_plugin_registercommand(pluginHandle, "Py", cbPyRunScript, false))
+		_plugin_logputs("[PYTHON] error registering the \"Py\" command!");
+
     _plugin_registercommand(pluginHandle, "PythonDebug", [](int argc, char* argv[])
     {
         Py_DebugFlag = 1;
@@ -671,7 +694,8 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 void pyStop()
 {
     _plugin_unregistercommand(pluginHandle, "OpenScript");
-    _plugin_unregistercommand(pluginHandle, "Pip");
+	_plugin_unregistercommand(pluginHandle, "Pip");  
+	_plugin_unregistercommand(pluginHandle, "Py");
 
     _plugin_menuclear(hMenu);
     _plugin_menuclear(hMenuDisasm);
