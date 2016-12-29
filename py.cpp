@@ -88,7 +88,10 @@ static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
 
 static bool ExecutePythonScript(const wchar_t* szFileName)
 {
-    String szFileNameA = Utf16ToUtf8(szFileName);
+    std::vector<wchar_t> szShortFileName;
+    szShortFileName.resize(wcslen(szFileName) * 2);
+    GetShortPathNameW(szFileName, szShortFileName.data(), DWORD(szShortFileName.size()));
+    String szFileNameA = Utf16ToUtf8(szShortFileName.data());
     PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
     if(PyFileObject == NULL)
     {
