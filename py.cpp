@@ -92,7 +92,7 @@ static bool FileExists(const wchar_t* file)
 	return (attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-static bool ExecutePythonScript(const wchar_t* szFileName)
+static bool ExecutePythonScript(const wchar_t* szFileName, int argc, char * argv[])
 {
 	if (!FileExists(szFileName))
 	{
@@ -146,6 +146,7 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
 	wchar_t szCurrentDir[MAX_PATH] = L"";
 	GetCurrentDirectoryW(_countof(szCurrentDir), szCurrentDir);
 
+	PySys_SetArgv(argc, argv);
 	auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
 	SetCurrentDirectoryW(szCurrentDir);
 	Py_DECREF(dict);
@@ -164,6 +165,14 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
 
 	_plugin_logputs("[PYTHON] Execution is done!");
 	return true;
+}
+
+static bool ExecutePythonScript(const wchar_t* szFileName)
+{
+	int argc = 1;
+	char *argv[] = { (char*)(szFileName) };
+
+	return (ExecutePythonScript(szFileName, argc, argv));
 }
 
 // Exports for other plugins
@@ -287,6 +296,66 @@ static bool cbPythonCommandExecute(const char* cmd)
 	}
 	return false;
 }
+/*
+Author: mugundhan
+
+To run Python script from console without dialog window
+Usage:py <script.py>
+
+*/
+static bool cbPyRunScript(int argc, char* argv[])
+{
+	if (argc < 2)
+	{
+		_plugin_logputs("[PYTHON] Command Example: Py <script.py> [args] ");
+		return false;
+	}
+
+
+
+	/* issue in argv ,
+	Example if we run :     py test.py d
+	argv[0]:py test.py d
+	argv[1]:test.pyd
+	so parsing from argv[0]
+
+	*/
+
+	int temp_argc = 0;
+	char **temp_argv;
+	const int MAX_ARGC = 30;
+	temp_argv = (char **)(malloc(MAX_ARGC * sizeof(char*)));
+	sprintf(argv[0], "%s ", argv[0]);//lazy fix  to parse last arg
+	char * pch = strtok(argv[0], " ");
+	bool skip_first = true;
+	while (pch != NULL)
+	{
+		if (temp_argc == 0 && skip_first)
+		{
+			skip_first = false;
+			pch = strtok(NULL, " ");
+			continue;
+		}
+		temp_argv[temp_argc] = (char *)malloc((strlen(pch) + 1)* sizeof(char));
+		strcpy(temp_argv[temp_argc], pch);
+		temp_argc++;
+
+		pch = strtok(NULL, " ");
+	}
+	_plugin_logprintf("Running  :%s \n", temp_argv[0]);
+
+	bool result = ExecutePythonScript(Utf8ToUtf16(temp_argv[0]).c_str(), temp_argc, temp_argv);
+
+	for (int i = 0; i < temp_argc; i++)
+		free(temp_argv[i]);
+	free(temp_argv);
+
+
+
+	return (result);
+
+}
+
 
 static void cbWinEventCallback(CBTYPE cbType, void* info)
 {
@@ -663,6 +732,7 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 		Py_VerboseFlag = 1;
 		return true;
 	});
+	regCmd("Py", cbPyRunScript);
 
 	// Find and set the PythonHome
 	std::wstring home;
@@ -719,6 +789,9 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 void pyStop()
 {
 	// Properly ends the python environment
+	_plugin_unregistercommand(pluginHandle, "Py");
+
+
 	Py_Finalize();
 }
 
