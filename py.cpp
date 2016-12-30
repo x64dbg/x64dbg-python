@@ -22,27 +22,27 @@ HINSTANCE hInst;
 
 enum
 {
-	MENU_RUNSCRIPTASYNC,
-	MENU_RUNGUISCRIPT,
-	MENU_ABOUT
+    MENU_RUNSCRIPTASYNC,
+    MENU_RUNGUISCRIPT,
+    MENU_ABOUT
 };
 
 extern "C" __declspec(dllexport) void CBMENUENTRY(CBTYPE cbType, PLUG_CB_MENUENTRY* info)
 {
-	switch (info->hEntry)
-	{
-	case MENU_RUNSCRIPTASYNC:
-		DbgCmdExec("PyRunScriptAsync");
-		break;
+    switch(info->hEntry)
+    {
+    case MENU_RUNSCRIPTASYNC:
+        DbgCmdExec("PyRunScriptAsync");
+        break;
 
-	case MENU_RUNGUISCRIPT:
-		DbgCmdExec("PyRunGuiScript");
-		break;
+    case MENU_RUNGUISCRIPT:
+        DbgCmdExec("PyRunGuiScript");
+        break;
 
-	case MENU_ABOUT:
-		MessageBoxA(hwndDlg, "Made By RealGame (Tomer Zait)", plugin_name " Plugin", MB_ICONINFORMATION);
-		break;
-	}
+    case MENU_ABOUT:
+        MessageBoxA(hwndDlg, "Made By RealGame (Tomer Zait)", plugin_name " Plugin", MB_ICONINFORMATION);
+        break;
+    }
 }
 
 static void pyCallback(const char* eventName, PyObject* pKwargs)
@@ -93,6 +93,7 @@ static bool FileExists(const wchar_t* file)
 }
 
 static bool ExecutePythonScript(const wchar_t* szFileName, int argc, char * argv[])
+
 {
 	if (!FileExists(szFileName))
 	{
@@ -167,8 +168,15 @@ static bool ExecutePythonScript(const wchar_t* szFileName, int argc, char * argv
 	return true;
 }
 
+static bool FileExists(const wchar_t* file)
+{
+    DWORD attrib = GetFileAttributesW(file);
+    return (attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
 static bool ExecutePythonScript(const wchar_t* szFileName)
 {
+
 	int argc = 1;
 	char *argv[] = { (char*)(szFileName) };
 
@@ -214,6 +222,7 @@ static bool cbPythonCommand(int argc, char* argv[])
 	}
 	PyRun_SimpleString(argv[1]);
 	return true;
+   
 }
 
 static bool cbPipCommand(int argc, char* argv[])
@@ -274,19 +283,17 @@ static bool cbPyRunScriptAsyncCommand(int argc, char* argv[])
 	}, nullptr, 0, nullptr));
 	return true;
 }
-
 static bool cbPyRunGuiScriptCommand(int argc, char* argv[])
 {
-	if (!openScriptName(argc, argv))
-		return false;
-	GuiExecuteOnGuiThread([]()
-	{
-		_plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
-		ExecutePythonScript(szScriptName.c_str());
-	});
-	return true;
+    if(!openScriptName(argc, argv))
+        return false;
+    GuiExecuteOnGuiThread([]()
+    {
+        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
+        ExecutePythonScript(szScriptName.c_str());
+    });
+    return true;
 }
-
 static bool cbPythonCommandExecute(const char* cmd)
 {
 	if (cmd)
@@ -295,6 +302,7 @@ static bool cbPythonCommandExecute(const char* cmd)
 		return true;
 	}
 	return false;
+
 }
 /*
 Author: mugundhan
@@ -714,6 +722,7 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 	info.completeCommand = nullptr;
 	GuiRegisterScriptLanguage(&info);
 
+
 	// Register commands
 	auto regCmd = [](const char* command, CBPLUGINCOMMAND cbCommand)
 	{
@@ -733,7 +742,6 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 		return true;
 	});
 	regCmd("Py", cbPyRunScript);
-
 	// Find and set the PythonHome
 	std::wstring home;
 	if (!findX64dbgPythonHome(home))
@@ -784,15 +792,17 @@ bool pyInit(PLUG_INITSTRUCT* initStruct)
 
 	PyRun_SimpleString("from " module_name " import *\n");
 	return true;
+
 }
 
 void pyStop()
 {
-	// Properly ends the python environment
+	
 	_plugin_unregistercommand(pluginHandle, "Py");
 
 
-	Py_Finalize();
+    // Properly ends the python environment
+    Py_Finalize();
 }
 
 void pySetup()
@@ -824,4 +834,5 @@ void pySetup()
 	_plugin_registercallback(pluginHandle, CB_SYSTEMBREAKPOINT, cbSystemBreakpointCallback);
 	_plugin_registercallback(pluginHandle, CB_LOADDLL, cbLoadDllCallback);
 	_plugin_registercallback(pluginHandle, CB_UNLOADDLL, cbUnloadDllCallback);
+
 }
