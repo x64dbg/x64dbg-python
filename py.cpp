@@ -128,70 +128,81 @@ static bool OpenFileDialog(wchar_t Buffer[MAX_PATH])
     return (FALSE != GetOpenFileNameW(&sOpenFileName));
 }
 
+
+
+static bool ExecutePythonScript(const wchar_t* szFileName,int argc ,char * argv[])
+{
+	String szFileNameA = Utf16ToUtf8(szFileName);
+	PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
+	if (PyFileObject == NULL)
+	{
+		_plugin_logprintf("[PYTHON] Could not open file.... \n");
+		PyErr_PrintEx(0);
+		return false;
+	}
+
+	bool local = false;
+
+	PyObject* module, *dict;
+	module = PyImport_AddModule("__main__");
+	dict = PyModule_GetDict(module);
+	if (local)
+	{
+		dict = PyDict_Copy(dict);
+	}
+	else
+	{
+		Py_INCREF(dict); // avoid to further distinguish between local and global dict
+	}
+
+	if (PyDict_GetItemString(dict, "__file__") == NULL)
+	{
+		PyObject* f = PyString_FromString(szFileNameA.c_str());
+		if (f == NULL)
+		{
+			Py_DECREF(dict);
+			return false;
+		}
+		if (PyDict_SetItemString(dict, "__file__", f) < 0)
+		{
+			Py_DECREF(f);
+			Py_DECREF(dict);
+			return false;
+		}
+		Py_DECREF(f);
+	}
+
+	wchar_t szCurrentDir[MAX_PATH] = L"";
+	GetCurrentDirectoryW(_countof(szCurrentDir), szCurrentDir);
+	PySys_SetArgv(argc, argv);
+	auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
+	SetCurrentDirectoryW(szCurrentDir);
+	Py_DECREF(dict);
+	Py_DECREF(PyFileObject);
+
+	if (result == NULL)
+	{
+		if (PyErr_ExceptionMatches(PyExc_SystemExit))
+			_plugin_logprintf("[PYTHON] SystemExit...\n");
+		else
+			_plugin_logprintf("[PYTHON] Exception...\n");
+		PyErr_PrintEx(1);
+		return false;
+	}
+	Py_DECREF(result);
+
+	_plugin_logputs("[PYTHON] Execution is done!");
+	return true;
+}
+
 static bool ExecutePythonScript(const wchar_t* szFileName)
 {
-    String szFileNameA = Utf16ToUtf8(szFileName);
-    PyObject* PyFileObject = PyFile_FromString((char*)szFileNameA.c_str(), "r");
-    if(PyFileObject == NULL)
-    {
-        _plugin_logprintf("[PYTHON] Could not open file.... \n");
-        PyErr_PrintEx(0);
-        return false;
-    }
+	int argc = 1;
+	char *argv[] = { (char*)(szFileName) };
 
-    bool local = false;
-
-    PyObject* module, *dict;
-    module = PyImport_AddModule("__main__");
-    dict = PyModule_GetDict(module);
-    if(local)
-    {
-        dict = PyDict_Copy(dict);
-    }
-    else
-    {
-        Py_INCREF(dict); // avoid to further distinguish between local and global dict
-    }
-
-    if(PyDict_GetItemString(dict, "__file__") == NULL)
-    {
-        PyObject* f = PyString_FromString(szFileNameA.c_str());
-        if(f == NULL)
-        {
-            Py_DECREF(dict);
-            return false;
-        }
-        if(PyDict_SetItemString(dict, "__file__", f) < 0)
-        {
-            Py_DECREF(f);
-            Py_DECREF(dict);
-            return false;
-        }
-        Py_DECREF(f);
-    }
-
-    wchar_t szCurrentDir[MAX_PATH] = L"";
-    GetCurrentDirectoryW(_countof(szCurrentDir), szCurrentDir);
-
-    auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
-    SetCurrentDirectoryW(szCurrentDir);
-    Py_DECREF(dict);
-    Py_DECREF(PyFileObject);
-
-    if(result == NULL)
-    {
-        if(PyErr_ExceptionMatches(PyExc_SystemExit))
-            _plugin_logprintf("[PYTHON] SystemExit...\n");
-        else
-            _plugin_logprintf("[PYTHON] Exception...\n");
-        PyErr_PrintEx(1);
-        return false;
-    }
-    Py_DECREF(result);
-
-    _plugin_logputs("[PYTHON] Execution is done!");
-    return true;
+	return (ExecutePythonScript(szFileName, argc, argv));
 }
+
 
 // Exports for other plugins
 extern "C" __declspec(dllexport) bool ExecutePythonScriptA(const char* szFileName)
@@ -230,12 +241,53 @@ static bool cbPyRunScript(int argc, char* argv[])
 {
 	if (argc < 2)
 	{
-		_plugin_logputs("[PYTHON] Command Example: Py <script.py> ");
+		_plugin_logputs("[PYTHON] Command Example: Py <script.py> [args] ");
 		return false;
 	}
 	_plugin_logprintf("Running  :%s \n", argv[1]);
+
+
+
+	/* issue in argv ,
+	Example if we run :     py test.py d 
+	  argv[0]:py test.py d
+	  argv[1]:test.pyd
+	so parsing from argv[0]
 	
-	return ExecutePythonScript(Utf8ToUtf16(argv[1]).c_str());	
+	*/
+	
+	int temp_argc=0;
+	char **temp_argv;
+	const int MAX_ARGC = 30;
+	temp_argv =(char **) (malloc(MAX_ARGC * sizeof(char*)));
+	sprintf(argv[0], "%s ", argv[0]);//lazy fix  to parse last arg
+	char * pch = strtok(argv[0], " ");
+	bool skip_first = true;
+	while (pch != NULL)
+	{
+		if (temp_argc == 0 && skip_first)
+		{
+			skip_first = false;
+			pch = strtok(NULL, " ");
+			continue;
+		}
+		temp_argv[temp_argc] = (char *)malloc((strlen(pch) + 1)* sizeof(char));
+		strcpy(temp_argv[temp_argc], pch);
+		temp_argc++;
+		
+		pch = strtok(NULL, " ");
+	}
+	_plugin_logprintf("Running  :%s \n", temp_argv[0]);
+
+	bool result = ExecutePythonScript(Utf8ToUtf16(temp_argv[0]).c_str(), temp_argc, temp_argv);
+
+	for (int i = 0; i < temp_argc; i++)
+		free(temp_argv[i]);
+	free(temp_argv);
+
+
+
+	return (result);	
 
 }
 
