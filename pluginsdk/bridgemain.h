@@ -236,6 +236,8 @@ typedef enum
     DBG_GET_THREAD_HANDLE,          // param1=unused,                    param2=unused
     DBG_GET_PROCESS_ID,             // param1=unused,                    param2=unused
     DBG_GET_THREAD_ID,              // param1=unused,                    param2=unused
+    DBG_GET_PEB_ADDRESS,            // param1=DWORD ProcessId,           param2=unused
+    DBG_GET_TEB_ADDRESS,            // param1=DWORD ThreadId,            param2=unused
 } DBGMSG;
 
 typedef enum
@@ -871,6 +873,8 @@ BRIDGE_IMPEXP HANDLE DbgGetProcessHandle();
 BRIDGE_IMPEXP HANDLE DbgGetThreadHandle();
 BRIDGE_IMPEXP DWORD DbgGetProcessId();
 BRIDGE_IMPEXP DWORD DbgGetThreadId();
+BRIDGE_IMPEXP duint DbgGetPebAddress(DWORD ProcessId);
+BRIDGE_IMPEXP duint DbgGetTebAddress(DWORD ThreadId);
 
 //Gui defines
 #define GUI_PLUGIN_MENU 0
@@ -987,6 +991,10 @@ typedef enum
     GUI_TYPE_CLEAR,                 // param1=unused,               param2=unused
     GUI_UPDATE_TYPE_WIDGET,         // param1=unused,               param2=unused
     GUI_CLOSE_APPLICATION,          // param1=unused,               param2=unused
+    GUI_MENU_SET_VISIBLE,           // param1=int hMenu,            param2=bool visible
+    GUI_MENU_SET_ENTRY_VISIBLE,     // param1=int hEntry,           param2=bool visible
+    GUI_MENU_SET_NAME,              // param1=int hMenu,            param2=const char* name
+    GUI_MENU_SET_ENTRY_NAME,        // param1=int hEntry,           param2=const char* name
 } GUIMSG;
 
 //GUI Typedefs
@@ -1114,6 +1122,10 @@ BRIDGE_IMPEXP void GuiLoadSourceFile(const char* path, int line);
 BRIDGE_IMPEXP void GuiMenuSetIcon(int hMenu, const ICONDATA* icon);
 BRIDGE_IMPEXP void GuiMenuSetEntryIcon(int hEntry, const ICONDATA* icon);
 BRIDGE_IMPEXP void GuiMenuSetEntryChecked(int hEntry, bool checked);
+BRIDGE_IMPEXP void GuiMenuSetVisible(int hMenu, bool visible);
+BRIDGE_IMPEXP void GuiMenuSetEntryVisible(int hEntry, bool visible);
+BRIDGE_IMPEXP void GuiMenuSetName(int hMenu, const char* name);
+BRIDGE_IMPEXP void GuiMenuSetEntryName(int hEntry, const char* name);
 BRIDGE_IMPEXP void GuiShowCpu();
 BRIDGE_IMPEXP void GuiAddQWidgetTab(void* qWidget);
 BRIDGE_IMPEXP void GuiShowQWidgetTab(void* qWidget);
