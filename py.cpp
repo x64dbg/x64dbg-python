@@ -92,7 +92,7 @@ static bool FileExists(const wchar_t* file)
     return (attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-static bool ExecutePythonScript(const wchar_t* szFileName)
+static bool ExecutePythonScript(const wchar_t* szFileName, int argc, char* argv[])
 {
     if(!FileExists(szFileName))
     {
@@ -146,6 +146,8 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
     wchar_t szCurrentDir[MAX_PATH] = L"";
     GetCurrentDirectoryW(_countof(szCurrentDir), szCurrentDir);
 
+    if(argc > 0)
+        PySys_SetArgv(argc, argv);
     auto result = PyRun_File(PyFile_AsFile(PyFileObject), szFileNameA.c_str(), Py_file_input, dict, dict);
     SetCurrentDirectoryW(szCurrentDir);
     Py_DECREF(dict);
@@ -167,32 +169,70 @@ static bool ExecutePythonScript(const wchar_t* szFileName)
 }
 
 // Exports for other plugins
-extern "C" __declspec(dllexport) bool ExecutePythonScriptA(const char* szFileName)
+extern "C" __declspec(dllexport) bool ExecutePythonScriptExA(const char* szFileName, int argc, char* argv[])
 {
     _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", szFileName);
-    return ExecutePythonScript(Utf8ToUtf16(szFileName).c_str());
+    return ExecutePythonScript(Utf8ToUtf16(szFileName).c_str(), argc, argv);
+}
+
+extern "C" __declspec(dllexport) bool ExecutePythonScriptA(const char* szFileName)
+{
+    return ExecutePythonScriptExA(szFileName, 0, nullptr);
+}
+
+extern "C" __declspec(dllexport) bool ExecutePythonScriptExW(const wchar_t* szFileName, int argc, wchar_t* argv[])
+{
+    std::vector<char*> argvPtr(argc);
+    std::vector<std::vector<char>> argvData(argc);
+    for(int i = 0; i < argc; i++)
+    {
+        auto conv = Utf16ToUtf8(argv[i]);
+        argvData[i] = std::vector<char>(conv.begin(), conv.end());
+        argvData[i].push_back('\0');
+        argvPtr[i] = argvData[i].data();
+    }
+    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szFileName).c_str());
+    return ExecutePythonScript(szFileName, argc, argvPtr.data());
 }
 
 extern "C" __declspec(dllexport) bool ExecutePythonScriptW(const wchar_t* szFileName)
 {
-    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szFileName).c_str());
-    return ExecutePythonScript(szFileName);
+    return ExecutePythonScriptExW(szFileName, 0, nullptr);
 }
 
 // Command callbacks
-static std::wstring szScriptName;
+static std::wstring scriptName;
+static std::vector<std::vector<char>> scriptArgvData;
+static std::vector<char*> scriptArgvPtr;
 
 static bool openScriptName(int argc, char* argv[])
 {
+    // Get script name
     if(argc < 2)
     {
         wchar_t szFileName[MAX_PATH] = L"";
         if(!OpenFileDialog(szFileName))
             return false;
-        szScriptName = szFileName;
+        scriptName = szFileName;
     }
     else
-        szScriptName = Utf8ToUtf16(argv[1]);
+        scriptName = Utf8ToUtf16(argv[1]);
+
+    // Get (optional) script arguments
+    scriptArgvData.clear();
+    scriptArgvPtr.clear();
+    if(argc > 2)
+    {
+        auto pyArgc = argc - 1;
+        scriptArgvData.resize(pyArgc);
+        scriptArgvPtr.resize(pyArgc);
+        for(int i = 0; i < pyArgc; i++)
+        {
+            auto arg = argv[i + 1];
+            scriptArgvData[i] = std::vector<char>(arg, arg + strlen(arg) + 1);
+            scriptArgvPtr[i] = scriptArgvData[i].data();
+        }
+    }
     return true;
 }
 
@@ -249,8 +289,8 @@ static bool cbPyRunScriptCommand(int argc, char* argv[])
 {
     if(!openScriptName(argc, argv))
         return false;
-    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
-    return ExecutePythonScript(szScriptName.c_str());
+    _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(scriptName).c_str());
+    return ExecutePythonScript(scriptName.c_str(), int(scriptArgvPtr.size()), scriptArgvPtr.data());
 }
 
 static bool cbPyRunScriptAsyncCommand(int argc, char* argv[])
@@ -259,8 +299,8 @@ static bool cbPyRunScriptAsyncCommand(int argc, char* argv[])
         return false;
     CloseHandle(CreateThread(nullptr, 0, [](void*) -> DWORD
     {
-        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
-        ExecutePythonScript(szScriptName.c_str());
+        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(scriptName).c_str());
+        ExecutePythonScript(scriptName.c_str(), int(scriptArgvPtr.size()), scriptArgvPtr.data());
         return 0;
     }, nullptr, 0, nullptr));
     return true;
@@ -272,8 +312,8 @@ static bool cbPyRunGuiScriptCommand(int argc, char* argv[])
         return false;
     GuiExecuteOnGuiThread([]()
     {
-        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(szScriptName).c_str());
-        ExecutePythonScript(szScriptName.c_str());
+        _plugin_logprintf("[PYTHON] Executing script: \"%s\"\n", Utf16ToUtf8(scriptName).c_str());
+        ExecutePythonScript(scriptName.c_str(), int(scriptArgvPtr.size()), scriptArgvPtr.data());
     });
     return true;
 }
@@ -327,7 +367,7 @@ static void cbInitDebugCallback(CBTYPE cbType, void* info)
         do
         {
             _plugin_logprintf("[PYTHON] Executing autorun file: \"%s\".\n", Utf16ToUtf8(FindFileData.cFileName).c_str());
-            ExecutePythonScript(FindFileData.cFileName);
+            ExecutePythonScript(FindFileData.cFileName, int(scriptArgvPtr.size()), scriptArgvPtr.data());
         }
         while(FindNextFileW(hFind, &FindFileData) != 0);
         FindClose(hFind);
