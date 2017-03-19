@@ -5,7 +5,7 @@ from .. import x64dbg
 def Read(addr, size):
     read_bytes = bytearray(size)
     result, read_size = x64dbg.Memory_Read(addr, read_bytes, size)
-    return bytearray(read_bytes[:read_size])
+    return bytes(read_bytes[:read_size])
 
 def Write(addr, data):
     result, write_size = x64dbg.Memory_Write(addr, data, len(data))
