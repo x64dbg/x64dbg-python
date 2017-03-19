@@ -5,7 +5,7 @@ from .. import x64dbg
 def Read(addr, size):
     read_bytes = bytearray(size)
     result, read_size = x64dbg.Memory_Read(addr, read_bytes, size)
-    return bytes(read_bytes[:read_size])
+    return bytearray(read_bytes[:read_size])
 
 def Write(addr, data):
     result, write_size = x64dbg.Memory_Write(addr, data, len(data))
@@ -20,6 +20,14 @@ def RemoteAlloc(size, addr=0):
 def RemoteFree(addr):
     return x64dbg.RemoteFree(addr)
 
+def GetProtect(addr, reserved=False, cache=True):
+    return x64dbg.GetProtect(addr, reserved, cache)
+
+def GetBase(addr, reserved=False, cache=True):
+    return x64dbg.GetBase(addr, reserved, cache)
+
+def GetSize(addr, reserved=False, cache=True):
+    return x64dbg.GetSize(addr, reserved, cache)
 
 def ReadByte(addr):
     return x64dbg.ReadByte(addr)
