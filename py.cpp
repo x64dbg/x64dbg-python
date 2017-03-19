@@ -162,7 +162,8 @@ static bool ExecutePythonScript(const wchar_t* szFileName, int argc, char* argv[
         PyErr_PrintEx(1);
         return false;
     }
-    Py_DECREF(result);
+    else
+        Py_DECREF(result);
 
     _plugin_logputs("[PYTHON] Execution is done!");
     return true;
@@ -243,7 +244,8 @@ static bool cbPythonCommand(int argc, char* argv[])
         _plugin_logputs("[PYTHON] Command Example: Python \"print('Hello World')\".");
         return false;
     }
-    PyRun_SimpleString(argv[1]);
+    PyRun_SimpleString(argv[0] + 7);
+    GuiFlushLog();
     return true;
 }
 
@@ -323,6 +325,7 @@ static bool cbPythonCommandExecute(const char* cmd)
     if(cmd)
     {
         PyRun_SimpleString(cmd);
+        GuiFlushLog();
         return true;
     }
     return false;
