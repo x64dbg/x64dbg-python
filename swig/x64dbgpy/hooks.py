@@ -20,7 +20,7 @@ def __signal(sig, action):
 
 
 class OutputHook(object):
-    def __init__(self, stream_name='stdout', callback=_plugins._plugin_logprintf):
+    def __init__(self, stream_name='stdout', callback=_plugins._plugin_logprint):
         self.is_hooking = False
         self.callback = callback
 
