@@ -94,6 +94,27 @@ typedef struct
     unsigned int State;
 } TCPCONNECTIONINFO;
 
+typedef struct
+{
+    duint handle;
+    duint parent;
+    DWORD threadId;
+    DWORD style;
+    DWORD styleEx;
+    duint wndProc;//not used yet
+    bool enabled;
+    RECT position;
+    char windowTitle[MAX_COMMENT_SIZE];
+    char windowClass[MAX_COMMENT_SIZE];
+} WINDOW_INFO;
+
+typedef struct
+{
+    duint addr;
+    duint size;
+    duint flags;
+} HEAPINFO;
+
 typedef bool (*ASSEMBLEATEX)(duint addr, const char* instruction, char* error, bool fillnop);
 typedef bool (*SECTIONFROMADDR)(duint addr, char* section);
 typedef bool (*MODNAMEFROMADDR)(duint addr, char* modname, bool extension);
@@ -149,7 +170,13 @@ typedef bool(*MEMISCODEPAGE)(duint addr, bool refresh);
 typedef bool(*ANIMATECOMMAND)(const char* command);
 typedef void(*DBGSETDEBUGGEEINITSCRIPT)(const char* fileName);
 typedef const char* (*DBGGETDEBUGGEEINITSCRIPT)();
+typedef bool(*HANDLESENUMWINDOWS)(ListOf(WINDOW_INFO) windows);
+typedef bool(*HANDLESENUMHEAPS)(ListOf(HEAPINFO) heaps);
+typedef bool(*THREADGETNAME)(DWORD tid, char* name);
+typedef bool(*ISDEPENABLED)();
 
+//The list of all the DbgFunctions() return value.
+//WARNING: This list is append only. Do not insert things in the middle or plugins would break.
 typedef struct DBGFUNCTIONS_
 {
     ASSEMBLEATEX AssembleAtEx;
@@ -207,6 +234,10 @@ typedef struct DBGFUNCTIONS_
     ANIMATECOMMAND AnimateCommand;
     DBGSETDEBUGGEEINITSCRIPT DbgSetDebuggeeInitScript;
     DBGGETDEBUGGEEINITSCRIPT DbgGetDebuggeeInitScript;
+    HANDLESENUMWINDOWS EnumWindows;
+    HANDLESENUMHEAPS EnumHeaps;
+    THREADGETNAME ThreadGetName;
+    ISDEPENABLED IsDepEnabled;
 } DBGFUNCTIONS;
 
 #ifdef BUILD_DBG

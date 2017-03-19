@@ -7,9 +7,6 @@
 #include <stdbool.h>
 #endif
 
-//list structure (and C++ wrapper)
-#include "bridgelist.h"
-
 //default structure alignments forced
 #ifdef _WIN64
 #pragma pack(push, 16)
@@ -58,6 +55,9 @@ BRIDGE_IMPEXP int BridgeGetDbgVersion();
 #ifdef __cplusplus
 }
 #endif
+
+//list structure (and C++ wrapper)
+#include "bridgelist.h"
 
 #include "bridgegraph.h"
 
@@ -238,6 +238,7 @@ typedef enum
     DBG_GET_THREAD_ID,              // param1=unused,                    param2=unused
     DBG_GET_PEB_ADDRESS,            // param1=DWORD ProcessId,           param2=unused
     DBG_GET_TEB_ADDRESS,            // param1=DWORD ThreadId,            param2=unused
+    DBG_ANALYZE_FUNCTION,           // param1=BridgeCFGraphList* graph,  param2=duint entry
 } DBGMSG;
 
 typedef enum
@@ -860,7 +861,7 @@ BRIDGE_IMPEXP bool DbgWinEventGlobal(MSG* message);
 BRIDGE_IMPEXP bool DbgIsRunning();
 BRIDGE_IMPEXP duint DbgGetTimeWastedCounter();
 BRIDGE_IMPEXP ARGTYPE DbgGetArgTypeAt(duint addr);
-BRIDGE_IMPEXP void* DbgGetEncodeTypeBuffer(duint addr);
+BRIDGE_IMPEXP void* DbgGetEncodeTypeBuffer(duint addr, duint* size);
 BRIDGE_IMPEXP void DbgReleaseEncodeTypeBuffer(void* buffer);
 BRIDGE_IMPEXP ENCODETYPE DbgGetEncodeTypeAt(duint addr, duint size);
 BRIDGE_IMPEXP duint DbgGetEncodeSizeAt(duint addr, duint codesize);
@@ -875,6 +876,7 @@ BRIDGE_IMPEXP DWORD DbgGetProcessId();
 BRIDGE_IMPEXP DWORD DbgGetThreadId();
 BRIDGE_IMPEXP duint DbgGetPebAddress(DWORD ProcessId);
 BRIDGE_IMPEXP duint DbgGetTebAddress(DWORD ThreadId);
+BRIDGE_IMPEXP bool DbgAnalyzeFunction(duint entry, BridgeCFGraphList* graph);
 
 //Gui defines
 #define GUI_PLUGIN_MENU 0
@@ -995,6 +997,7 @@ typedef enum
     GUI_MENU_SET_ENTRY_VISIBLE,     // param1=int hEntry,           param2=bool visible
     GUI_MENU_SET_NAME,              // param1=int hMenu,            param2=const char* name
     GUI_MENU_SET_ENTRY_NAME,        // param1=int hEntry,           param2=const char* name
+    GUI_FLUSH_LOG,                  // param1=unused,               param2=unused
 } GUIMSG;
 
 //GUI Typedefs
@@ -1088,7 +1091,7 @@ BRIDGE_IMPEXP int GuiReferenceGetRowCount();
 BRIDGE_IMPEXP void GuiReferenceDeleteAllColumns();
 BRIDGE_IMPEXP void GuiReferenceInitialize(const char* name);
 BRIDGE_IMPEXP void GuiReferenceSetCellContent(int row, int col, const char* str);
-BRIDGE_IMPEXP const char* GuiReferenceGetCellContent(int row, int col);
+BRIDGE_IMPEXP char* GuiReferenceGetCellContent(int row, int col);
 BRIDGE_IMPEXP void GuiReferenceReloadData();
 BRIDGE_IMPEXP void GuiReferenceSetSingleSelection(int index, bool scroll);
 BRIDGE_IMPEXP void GuiReferenceSetProgress(int progress);
@@ -1162,6 +1165,7 @@ BRIDGE_IMPEXP void* GuiTypeAddNode(void* parent, const TYPEDESCRIPTOR* type);
 BRIDGE_IMPEXP bool GuiTypeClear();
 BRIDGE_IMPEXP void GuiUpdateTypeWidget();
 BRIDGE_IMPEXP void GuiCloseApplication();
+BRIDGE_IMPEXP void GuiFlushLog();
 
 #ifdef __cplusplus
 }
