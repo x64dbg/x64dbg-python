@@ -1,5 +1,7 @@
 # x64dbgpy
 
+[![Build status](https://ci.appveyor.com/api/projects/status/uai2omdvrw3xcie4?svg=true)](https://ci.appveyor.com/project/mrexodia/x64dbg-python)
+
 Automating [x64dbg](http://x64dbg.com) using Python.
 
 Works with: http://releases.x64dbg.com
