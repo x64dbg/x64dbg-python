@@ -37,7 +37,7 @@ setup(
         include_dirs=[r'..\pluginsdk', r'include'],
         library_dirs=[r'..\pluginsdk'],
         libraries=['x64bridge', 'x64dbg'] if is_64bit() else ['x32bridge', 'x32dbg'],
-        extra_compile_args=['/EHsc'],
+        extra_compile_args=['/EHsc', '/MT'],
     )],
     py_modules=['x64dbgpy.pluginsdk.x64dbg'],
     cmdclass={'build': SwigBuild},
