@@ -174,6 +174,8 @@ typedef bool(*HANDLESENUMWINDOWS)(ListOf(WINDOW_INFO) windows);
 typedef bool(*HANDLESENUMHEAPS)(ListOf(HEAPINFO) heaps);
 typedef bool(*THREADGETNAME)(DWORD tid, char* name);
 typedef bool(*ISDEPENABLED)();
+typedef void(*GETCALLSTACKEX)(DBGCALLSTACK* callstack, bool cache);
+typedef bool(*GETUSERCOMMENT)(duint addr, char* comment);
 
 //The list of all the DbgFunctions() return value.
 //WARNING: This list is append only. Do not insert things in the middle or plugins would break.
@@ -238,6 +240,8 @@ typedef struct DBGFUNCTIONS_
     HANDLESENUMHEAPS EnumHeaps;
     THREADGETNAME ThreadGetName;
     ISDEPENABLED IsDepEnabled;
+    GETCALLSTACKEX GetCallStackEx;
+    GETUSERCOMMENT GetUserComment;
 } DBGFUNCTIONS;
 
 #ifdef BUILD_DBG
