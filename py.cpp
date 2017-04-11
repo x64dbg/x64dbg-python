@@ -166,6 +166,7 @@ static bool ExecutePythonScript(const wchar_t* szFileName, int argc, char* argv[
         Py_DECREF(result);
 
     _plugin_logputs("[PYTHON] Execution is done!");
+    GuiUpdateAllViews();
     return true;
 }
 
@@ -246,6 +247,7 @@ static bool cbPythonCommand(int argc, char* argv[])
     }
     PyRun_SimpleString(argv[0] + 7);
     GuiFlushLog();
+    GuiUpdateAllViews();
     return true;
 }
 
@@ -326,6 +328,7 @@ static bool cbPythonCommandExecute(const char* cmd)
     {
         PyRun_SimpleString(cmd);
         GuiFlushLog();
+        GuiUpdateAllViews();
         return true;
     }
     return false;
