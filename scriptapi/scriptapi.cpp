@@ -106,7 +106,7 @@ PYBIND11_PLUGIN(scriptapi)
     py::module m("scriptapi", "Python module to wrap the x64dbg script api.");
 
     py::class_<PyMemory>(m, "Memory")
-    .def(py::init<>())
+    .def(py::init<>()) //it's the pythonic way `mem = scriptapi.Memory()`
     .def_static("read", PyMemory::Read, arg(addr), arg(size), "Read `size` bytes at `addr`.")
     .def_static("write", PyMemory::Write, arg(addr), arg(data), "Write `data` to `addr`.")
     .def_static("valid", Memory::IsValidPtr, arg(addr), "Returns if `addr` is a valid pointer.")
@@ -127,7 +127,7 @@ PYBIND11_PLUGIN(scriptapi)
     .def_static("write_ptr", Memory::WritePtr, arg(addr), arg(value), "Write `value` as a pointer to `addr`.");
 
     py::class_<PyRegister>(m, "Registers")
-    .def(py::init<>())
+    .def(py::init<>()) //it's the pythonic way `regs = scriptapi.Registers()`
     .def_property_static("dr0", pget(Register::GetDR0), pset(Register::SetDR0))
     .def_property_static("dr1", pget(Register::GetDR1), pset(Register::SetDR1))
     .def_property_static("dr2", pget(Register::GetDR2), pset(Register::SetDR2))
