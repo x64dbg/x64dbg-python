@@ -15,6 +15,7 @@ EVENTS = [
     'system_breakpoint',
     'load_dll',
     'unload_dll',
+    'trace_execute'
 ]
 
 class Event(object):
@@ -88,6 +89,13 @@ class Event(object):
         #     UNLOAD_DLL_DEBUG_INFO* UnloadDll;
         # } PLUG_CB_UNLOADDLL;
         self.unload_dll = None
+        # Keys: trace
+        # typedef struct
+        # {
+        #     duint cip;
+        #     bool stop;
+        # } PLUG_CB_TRACEEXECUTE;
+        self.trace_execute = None
 
     def listen(self, event_name, callback):
         """

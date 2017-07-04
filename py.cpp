@@ -607,6 +607,26 @@ static void cbStopDebugCallback(CBTYPE cbType, void* info)
     pyCallback("stop_debug", PyDict_New());
 }
 
+static void cbTraceExecuteCallback(CBTYPE cbType, void* info)
+{
+    PLUG_CB_TRACEEXECUTE* traceInfo = (PLUG_CB_TRACEEXECUTE*)info;
+
+    PyObject* pTraceExecute;
+
+    pTraceExecute = Py_BuildValue(
+                        "{s:N, s:N}",
+                        "cip", PyInt_FromSize_t(traceInfo->cip),
+                        "stop", PyBool_FromLong(traceInfo->stop)
+                    );
+
+    // Packed in another dict because then it is passed by reference, so "stop" can be changed by the script.
+    pyCallback("trace_execute", Py_BuildValue("{s:N}", "trace", pTraceExecute));
+
+    traceInfo->stop = !!PyObject_IsTrue(PyDict_GetItemString(pTraceExecute, "stop"));
+
+    Py_DECREF(pTraceExecute);
+}
+
 static std::wstring makeX64dbgPackageDir(const std::wstring & directory)
 {
     auto dir = directory;
@@ -798,4 +818,5 @@ void pySetup()
     _plugin_registercallback(pluginHandle, CB_SYSTEMBREAKPOINT, cbSystemBreakpointCallback);
     _plugin_registercallback(pluginHandle, CB_LOADDLL, cbLoadDllCallback);
     _plugin_registercallback(pluginHandle, CB_UNLOADDLL, cbUnloadDllCallback);
+    _plugin_registercallback(pluginHandle, CB_TRACEEXECUTE, cbTraceExecuteCallback);
 }
