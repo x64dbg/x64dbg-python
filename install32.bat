@@ -15,4 +15,6 @@ set PYTHONHOME=%PYTHON27X86%
 "%PYTHON27X86%\python.exe" setup.py  install --install-lib=%PLUGINDIR%\x64dbgpy
 @cd ..
 
+copy bin\x32\scriptapi.pyd %PLUGINDIR%\x64dbgpy\
+
 @echo on
