@@ -1,3 +1,4 @@
+#pragma warning(disable:4091)
 #include <windows.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -101,11 +102,23 @@ struct PyDebugger
 {
 };
 
+//https://stackoverflow.com/a/43526890/1806760
+template <typename> struct FirstArgument;
+
+template <typename R, typename A, typename... Args>
+struct FirstArgument<R(A, Args...)>
+{
+    using type = A;
+};
+
+template <typename T>
+using first_agument_t = typename FirstArgument<T>::type;
+
 PYBIND11_PLUGIN(scriptapi)
 {
 #define arg(x) py::arg(#x)
 #define pget(x) [](py::object) { return x(); }
-#define pset(x) [](py::object, duint value) { return x(value); }
+#define pset(x) [](py::object, duint value) { return x(first_agument_t<decltype(x)>(value)); }
 
     py::module m("scriptapi", "Python module to wrap the x64dbg script api.");
 
@@ -164,6 +177,7 @@ PYBIND11_PLUGIN(scriptapi)
     .def_property_static("esp", pget(Register::GetESP), pset(Register::SetESP))
     .def_property_static("sp", pget(Register::GetSP), pset(Register::SetSP))
     .def_property_static("eip", pget(Register::GetEIP), pset(Register::SetEIP))
+    .def_property_static("eflags", pget(Register::GetCFLAGS), pset(Register::SetCFLAGS))
 
 #ifdef _WIN64
     .def_property_static("rax", pget(Register::GetRAX), pset(Register::SetRAX))
@@ -211,6 +225,7 @@ PYBIND11_PLUGIN(scriptapi)
     .def_property_static("r15d", pget(Register::GetR15D), pset(Register::SetR15D))
     .def_property_static("r15w", pget(Register::GetR15W), pset(Register::SetR15W))
     .def_property_static("r15b", pget(Register::GetR15B), pset(Register::SetR15B))
+    .def_property_static("rflags", pget(Register::GetCFLAGS), pset(Register::SetCFLAGS))
 #endif //_WIN64
 
     .def_property_static("cax", pget(Register::GetCAX), pset(Register::SetCAX))
@@ -221,7 +236,8 @@ PYBIND11_PLUGIN(scriptapi)
     .def_property_static("csi", pget(Register::GetCSI), pset(Register::SetCSI))
     .def_property_static("cbp", pget(Register::GetCBP), pset(Register::SetCBP))
     .def_property_static("csp", pget(Register::GetCSP), pset(Register::SetCSP))
-    .def_property_static("cip", pget(Register::GetCIP), pset(Register::SetCIP));
+    .def_property_static("cip", pget(Register::GetCIP), pset(Register::SetCIP))
+    .def_property_static("cflags", pget(Register::GetCFLAGS), pset(Register::SetCFLAGS));
 
     py::class_<PyDebugger>(m, "Debugger")
     .def(py::init<>());

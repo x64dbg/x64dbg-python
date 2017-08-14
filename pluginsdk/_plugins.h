@@ -202,7 +202,7 @@ typedef struct
 typedef struct
 {
     duint addr;
-    ADDRINFO* addrinfo;
+    BRIDGE_ADDRINFO* addrinfo;
     bool retval;
 } PLUG_CB_ADDRINFO;
 
@@ -222,6 +222,11 @@ typedef struct
     duint value;
     bool retval;
 } PLUG_CB_VALTOSTRING;
+
+typedef struct
+{
+    int hMenu;
+} PLUG_CB_MENUPREPARE;
 
 //enums
 typedef enum
@@ -256,15 +261,25 @@ typedef enum
     CB_ADDRINFO, //PLUG_CB_ADDRINFO
     CB_VALFROMSTRING, //PLUG_CB_VALFROMSTRING
     CB_VALTOSTRING, //PLUG_CB_VALTOSTRING
+    CB_MENUPREPARE, //PLUG_CB_MENUPREPARE
     CB_LAST
 } CBTYPE;
+
+typedef enum
+{
+    FORMAT_ERROR, //generic failure (no message)
+    FORMAT_SUCCESS, //success
+    FORMAT_ERROR_MESSAGE, //formatting failed but an error was put in the buffer (there are always at least 511 characters available).
+    FORMAT_BUFFER_TOO_SMALL //buffer too small (x64dbg will retry until the buffer is big enough)
+} FORMATRESULT;
 
 //typedefs
 typedef void (*CBPLUGIN)(CBTYPE cbType, void* callbackInfo);
 typedef bool (*CBPLUGINCOMMAND)(int argc, char** argv);
 typedef void (*CBPLUGINSCRIPT)();
 typedef duint(*CBPLUGINEXPRFUNCTION)(int argc, duint* argv, void* userdata);
-typedef bool(*CBPLUGINFORMATFUNCTION)(char* dest, size_t destCount, int argc, char* argv[], duint value, void* userdata);
+typedef FORMATRESULT(*CBPLUGINFORMATFUNCTION)(char* dest, size_t destCount, int argc, char* argv[], duint value, void* userdata);
+typedef bool (*CBPLUGINPREDICATE)(void* userdata);
 
 //exports
 #ifdef __cplusplus
@@ -292,6 +307,9 @@ PLUG_IMPEXP void _plugin_menusetvisible(int pluginHandle, int hMenu, bool visibl
 PLUG_IMPEXP void _plugin_menuentrysetvisible(int pluginHandle, int hEntry, bool visible);
 PLUG_IMPEXP void _plugin_menusetname(int pluginHandle, int hMenu, const char* name);
 PLUG_IMPEXP void _plugin_menuentrysetname(int pluginHandle, int hEntry, const char* name);
+PLUG_IMPEXP void _plugin_menuentrysethotkey(int pluginHandle, int hEntry, const char* hotkey);
+PLUG_IMPEXP bool _plugin_menuremove(int hMenu);
+PLUG_IMPEXP bool _plugin_menuentryremove(int pluginHandle, int hEntry);
 PLUG_IMPEXP void _plugin_startscript(CBPLUGINSCRIPT cbScript);
 PLUG_IMPEXP bool _plugin_waituntilpaused();
 PLUG_IMPEXP bool _plugin_registerexprfunction(int pluginHandle, const char* name, int argc, CBPLUGINEXPRFUNCTION cbFunction, void* userdata);

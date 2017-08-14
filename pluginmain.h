@@ -1,6 +1,8 @@
 #ifndef _PLUGINMAIN_H
 #define _PLUGINMAIN_H
 
+#pragma warning(disable:4091)
+
 #include <windows.h>
 #include "pluginsdk\_plugins.h"
 
