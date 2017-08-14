@@ -97,6 +97,10 @@ struct PyRegister
 {
 };
 
+struct PyDebugger
+{
+};
+
 PYBIND11_PLUGIN(scriptapi)
 {
 #define arg(x) py::arg(#x)
@@ -218,6 +222,10 @@ PYBIND11_PLUGIN(scriptapi)
     .def_property_static("cbp", pget(Register::GetCBP), pset(Register::SetCBP))
     .def_property_static("csp", pget(Register::GetCSP), pset(Register::SetCSP))
     .def_property_static("cip", pget(Register::GetCIP), pset(Register::SetCIP));
+
+    py::class_<PyDebugger>(m, "Debugger")
+    .def(py::init<>());
+
 
     return m.ptr();
 }
