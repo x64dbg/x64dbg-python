@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 #include "../pluginsdk/_plugins.h"
 
@@ -22,13 +23,16 @@
 #include "../pluginsdk/_scriptapi_stack.h"
 #include "../pluginsdk/_scriptapi_symbol.h"
 
+#define PLUGIN_NAME "scriptapi"
+#define dprintf(x, ...) _plugin_logprintf("[" PLUGIN_NAME "] " x, __VA_ARGS__)
+#define dputs(x) _plugin_logprintf("[" PLUGIN_NAME "] %s\n", x)
+
 #include "../pluginsdk/capstone/capstone.h"
 #include "../pluginsdk/DeviceNameResolver/DeviceNameResolver.h"
 #include "../pluginsdk/jansson/jansson.h"
 #include "../pluginsdk/lz4/lz4file.h"
 #include "../pluginsdk/TitanEngine/TitanEngine.h"
 #include "../pluginsdk/XEDParse/XEDParse.h"
-#include "../pluginsdk/yara/yara.h"
 
 #ifdef _WIN64
 #pragma comment(lib, "../pluginsdk/x64dbg.lib")
@@ -102,6 +106,71 @@ struct PyDebugger
 {
 };
 
+namespace
+{
+    using namespace Script::Module;
+
+    struct PyModule
+    {
+        ModuleInfo info;
+        std::vector<ModuleSectionInfo> sections;
+
+        PyModule(duint base)
+        {
+            if(InfoFromAddr(base, &info))
+            {
+                ListInfo sectionList;
+                if(SectionListFromAddr(info.base, &sectionList))
+                    BridgeList<ModuleSectionInfo>::ToVector(&sectionList, sections);
+            }
+            else
+                throw std::invalid_argument("Invalid module base.");
+        }
+
+        PyModule(std::string name)
+        {
+            if(InfoFromName(name.c_str(), &info))
+            {
+                ListInfo sectionList;
+                if(SectionListFromAddr(info.base, &sectionList))
+                    BridgeList<ModuleSectionInfo>::ToVector(&sectionList, sections);
+            }
+            else
+                throw std::invalid_argument("Invalid module name.");
+        }
+
+        duint Base()
+        {
+            return info.base;
+        }
+
+        duint Size()
+        {
+            return info.size;
+        }
+
+        duint Entry()
+        {
+            return info.entry;
+        }
+
+        std::string Name()
+        {
+            return info.name;
+        }
+
+        std::string Path()
+        {
+            return info.path;
+        }
+
+        std::vector<ModuleSectionInfo> Sections()
+        {
+            return sections;
+        }
+    };
+}
+
 //https://stackoverflow.com/a/43526890/1806760
 template <typename> struct FirstArgument;
 
@@ -114,16 +183,16 @@ struct FirstArgument<R(A, Args...)>
 template <typename T>
 using first_agument_t = typename FirstArgument<T>::type;
 
-PYBIND11_PLUGIN(scriptapi)
+PYBIND11_MODULE(scriptapi, m)
 {
 #define arg(x) py::arg(#x)
 #define pget(x) [](py::object) { return x(); }
 #define pset(x) [](py::object, duint value) { return x(first_agument_t<decltype(x)>(value)); }
 
-    py::module m("scriptapi", "Python module to wrap the x64dbg script api.");
+    m.doc() = "Python module to wrap the x64dbg script api.";
 
     py::class_<PyMemory>(m, "Memory")
-    .def(py::init<>()) //it's the pythonic way `mem = scriptapi.Memory()`
+    .def(py::init<>()) //it's the pythonic way: mem = scriptapi.Memory()
     .def_static("read", PyMemory::Read, arg(addr), arg(size), "Read `size` bytes at `addr`.")
     .def_static("write", PyMemory::Write, arg(addr), arg(data), "Write `data` to `addr`.")
     .def_static("valid", Memory::IsValidPtr, arg(addr), "Returns if `addr` is a valid pointer.")
@@ -144,7 +213,7 @@ PYBIND11_PLUGIN(scriptapi)
     .def_static("write_ptr", Memory::WritePtr, arg(addr), arg(value), "Write `value` as a pointer to `addr`.");
 
     py::class_<PyRegister>(m, "Registers")
-    .def(py::init<>()) //it's the pythonic way `regs = scriptapi.Registers()`
+    .def(py::init<>()) //it's the pythonic way: regs = scriptapi.Registers()
     .def_property_static("dr0", pget(Register::GetDR0), pset(Register::SetDR0))
     .def_property_static("dr1", pget(Register::GetDR1), pset(Register::SetDR1))
     .def_property_static("dr2", pget(Register::GetDR2), pset(Register::SetDR2))
@@ -240,8 +309,20 @@ PYBIND11_PLUGIN(scriptapi)
     .def_property_static("cflags", pget(Register::GetCFLAGS), pset(Register::SetCFLAGS));
 
     py::class_<PyDebugger>(m, "Debugger")
-    .def(py::init<>());
+    .def(py::init<>()); //it's the pythonic way: dbg = scriptapi.Debugger()
 
+    py::class_<Script::Module::ModuleSectionInfo>(m, "ModuleSection")
+    .def_property_readonly("addr", [](const Script::Module::ModuleSectionInfo & info) { return info.addr; }, "Start of the section.")
+    .def_property_readonly("size", [](const Script::Module::ModuleSectionInfo & info) { return info.size; }, "Size of the section.")
+    .def_property_readonly("name", [](const Script::Module::ModuleSectionInfo & info) { return info.name; }, "Name of the section.");
 
-    return m.ptr();
+    py::class_<PyModule>(m, "Module")
+    .def(py::init<duint>()) //mod = scriptapi.Module(0x400000)
+    .def(py::init<std::string>()) //mod = scriptapi.Module("ntdll.dll")
+    .def_property_readonly("base", &PyModule::Base, "Base address of the module.")
+    .def_property_readonly("size", &PyModule::Size, "Size of the module.")
+    .def_property_readonly("entry", &PyModule::Entry, "Entry point of the module.")
+    .def_property_readonly("name", &PyModule::Name, "Full filename of the module.")
+    .def_property_readonly("path", &PyModule::Path, "Full path of the module.")
+    .def_property_readonly("sections", &PyModule::Sections, "Sections of the module.");
 }
