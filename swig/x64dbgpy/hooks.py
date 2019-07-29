@@ -41,7 +41,10 @@ class OutputHook(object):
 
     def write(self, text):
         self.callback(text)
-        self.__original_stream.write(text)
+        try:
+            self.__original_stream.write(text)
+        except IOError:
+            pass
 
     def start(self):
         if not self.is_hooking:
