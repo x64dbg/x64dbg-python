@@ -52,8 +52,7 @@ class OutputHook(object):
         try:
             self.__original_stream.write(text)
         except IOError as e:
-            if e.errno != 0:
-                raise e
+            pass
 
     def start(self):
         if not self.is_hooking:
