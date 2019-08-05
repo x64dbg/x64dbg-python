@@ -42,13 +42,15 @@ class OutputHook(object):
     def write(self, text):
         self.callback(text)
 
-        # Hack to workaround a Windows 10 version < 1803 specific error.
-        # IOError errno=0 occurs when writing to stderr or stdout after an exception occurs.
+        # Hack to workaround a Windows 10 specific error.
+        # IOError (errno=0 OR errno=9) occurs when writing to stderr or stdout after an exception occurs.
         # Issue: https://github.com/x64dbg/x64dbgpy/issues/31
         # See:
         #    https://bugs.python.org/issue32245
         #    https://github.com/Microsoft/console/issues/40
         #    https://github.com/Microsoft/vscode/issues/36630
+        # Further issue discussion:
+        #    https://github.com/x64dbg/x64dbgpy/pull/32
         try:
             self.__original_stream.write(text)
         except IOError as e:
