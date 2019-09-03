@@ -78,6 +78,13 @@ struct PyMemoryPage
         strcpy_s(page.info, "MemoryPage constructed from address, might not match memory map.");
     }
 
+    std::string Str() const
+    {
+        char result[256] = "";
+        sprintf_s(result, "base: 0x%llX, size: 0x%llX", uint64_t(Base()), uint64_t(Size()));
+        return result;
+    }
+
     duint Base() const { return (duint)page.mbi.BaseAddress; }
     duint Size() const { return (duint)page.mbi.RegionSize; }
     duint Protect() const { return (duint)page.mbi.Protect; }
@@ -87,11 +94,57 @@ struct PyMemoryPage
     duint Type() const { return (duint)page.mbi.Type; }
     std::string Info() const { return page.info; }
 
-    std::string Str() const
+    bool InRange(duint addr) const
     {
-        char result[256] = "";
-        sprintf_s(result, "base: 0x%llX, size: 0x%llX", uint64_t(Base()), uint64_t(Size()));
+        auto base = Base();
+        return addr >= base && addr < base + Size();
+    }
+
+    duint Find(const std::string & pattern, duint start = 0) const
+    {
+        auto base = Base();
+        auto size = Size();
+
+        if(start == 0)
+            start = base;
+
+        if(start < base || start >= base + size)
+            throw std::invalid_argument("Start address not in page.");
+
+        auto result = Pattern::FindMem(start, Size() - (start - base), pattern.c_str());
+        if(result == -1) // to compensate for a bug/weirdness in x64dbg
+            result = 0;
         return result;
+    }
+
+    std::vector<duint> FindAll(const std::string & pattern, duint start = 0) const
+    {
+        auto base = Base();
+        auto size = Size();
+
+        if(start == 0)
+            start = base;
+
+        if(start < base || start >= base + size)
+            throw std::invalid_argument("Start address not in page.");
+
+        std::vector<unsigned char> data;
+        data.resize(size);
+        if(!Memory::Read(base, data.data(), size, nullptr))
+            return {};
+
+        std::vector<duint> results;
+        auto found = start - base;
+        while(true)
+        {
+            auto foundoffset = Pattern::Find(data.data() + found, data.size() - found, pattern.c_str());
+            if(foundoffset == -1)
+                break;
+            found += foundoffset;
+            results.push_back(base + found);
+            found++;
+        }
+        return results;
     }
 };
 
@@ -147,6 +200,57 @@ struct PyMemory
             BridgeFree(memmap.page);
         }
         return result;
+    }
+
+    static duint Find(const std::string & pattern, duint start = 0)
+    {
+        auto map = Map();
+        if(map.empty())
+            throw std::invalid_argument("Cannot find in empty memory map.");
+
+        if(start == 0)
+            start = map[0].Base();
+
+        auto startPage = std::find_if(map.begin(), map.end(), [start](const PyMemoryPage & page)
+        {
+            return page.InRange(start);
+        });
+        if(startPage == map.end())
+            throw std::invalid_argument("Cannot find start address in memory map.");
+
+        for(auto it = startPage; it != map.end(); ++it)
+        {
+            auto found = it->Find(pattern);
+            if(found)
+                return found;
+        }
+
+        return 0;
+    }
+
+    static std::vector<duint> FindAll(const std::string & pattern, duint start = 0)
+    {
+        auto map = Map();
+        if(map.empty())
+            throw std::invalid_argument("Cannot find in empty memory map.");
+
+        if(start == 0)
+            start = map[0].Base();
+
+        auto startPage = std::find_if(map.begin(), map.end(), [start](const PyMemoryPage & page)
+        {
+            return page.InRange(start);
+        });
+        if(startPage == map.end())
+            throw std::invalid_argument("Cannot find start address in memory map.");
+
+        std::vector<duint> results;
+        for(auto it = startPage; it != map.end(); ++it)
+        {
+            auto found = it->FindAll(pattern);
+            results.insert(results.end(), found.begin(), found.end());
+        }
+        return results;
     }
 };
 
@@ -228,6 +332,7 @@ PYBIND11_MODULE(scriptapi, m)
 
     py::class_<PyMemoryPage>(m, "MemoryPage")
     .def(py::init<duint>()) //page = scriptapi.MemoryPage(0x400000)
+    .def("__str__", &PyMemoryPage::Str)
     .def_property_readonly("base", &PyMemoryPage::Base, "MEMORY_BASIC_INFORMATION.BaseAddress")
     .def_property_readonly("size", &PyMemoryPage::Size, "MEMORY_BASIC_INFORMATION.RegionSize")
     .def_property_readonly("protect", &PyMemoryPage::Protect, "MEMORY_BASIC_INFORMATION.Protect")
@@ -236,7 +341,9 @@ PYBIND11_MODULE(scriptapi, m)
     .def_property_readonly("state", &PyMemoryPage::State, "MEMORY_BASIC_INFORMATION.State")
     .def_property_readonly("type", &PyMemoryPage::Type, "MEMORY_BASIC_INFORMATION.Type")
     .def_property_readonly("info", &PyMemoryPage::Info, "Additional information (module/section name).")
-    .def("__str__", &PyMemoryPage::Str);
+    .def("in_range", &PyMemoryPage::InRange, arg(addr), "Check if address in in range of the page.")
+    .def("find", &PyMemoryPage::Find, arg(pattern), arg(start) = 0, "Find occurrence of pattern in page.")
+    .def("find_all", &PyMemoryPage::FindAll, arg(pattern), arg(start) = 0, "Find all occurrences of pattern in page.");
 
     py::class_<PyMemory>(m, "Memory")
     .def(py::init<>()) //it's the pythonic way: mem = scriptapi.Memory()
@@ -258,7 +365,9 @@ PYBIND11_MODULE(scriptapi, m)
     .def_static("write_qword", Memory::WriteQword, arg(addr), arg(value), "Write `value` as a qword to `addr`.")
     .def_static("read_ptr", Memory::ReadPtr, arg(addr), "Read a pointer at `addr`.")
     .def_static("write_ptr", Memory::WritePtr, arg(addr), arg(value), "Write `value` as a pointer to `addr`.")
-    .def_property_readonly_static("map", pget(PyMemory::Map), "Get list of MemoryPages forming the memory map.");
+    .def_property_readonly_static("map", pget(PyMemory::Map), "Get list of MemoryPages forming the memory map.")
+    .def_static("find", PyMemory::Find, arg(pattern), arg(start) = 0, "Find single occurence of a pattern in memory.")
+    .def_static("find_all", PyMemory::FindAll, arg(pattern), arg(start) = 0, "Find all occurences of a pattern in memory.");
 
     py::class_<PyRegister>(m, "Registers")
     .def(py::init<>()) //it's the pythonic way: regs = scriptapi.Registers()
