@@ -59,6 +59,42 @@
 using namespace Script;
 namespace py = pybind11;
 
+struct PyMemoryPage
+{
+    MEMPAGE page;
+
+    PyMemoryPage() = default;
+
+    PyMemoryPage(duint addr)
+    {
+        memset(&page, 0, sizeof(page));
+        auto base = Memory::GetBase(addr, true);
+        if(!base)
+            throw std::invalid_argument("Invalid memory base.");
+        if(!VirtualQueryEx(DbgGetProcessHandle(), (PVOID)base, &page.mbi, sizeof(MEMORY_BASIC_INFORMATION)))
+            throw std::invalid_argument("Failed to query page information.");
+        page.mbi.BaseAddress = (PVOID)base;
+        page.mbi.RegionSize = Memory::GetSize(base, true);
+        strcpy_s(page.info, "MemoryPage constructed from address, might not match memory map.");
+    }
+
+    duint Base() const { return (duint)page.mbi.BaseAddress; }
+    duint Size() const { return (duint)page.mbi.RegionSize; }
+    duint Protect() const { return (duint)page.mbi.Protect; }
+    duint AllocBase() const { return (duint)page.mbi.AllocationBase; }
+    duint AllocProtect() const { return (duint)page.mbi.AllocationProtect; }
+    duint State() const { return (duint)page.mbi.State; }
+    duint Type() const { return (duint)page.mbi.Type; }
+    std::string Info() const { return page.info; }
+
+    std::string Str() const
+    {
+        char result[256] = "";
+        sprintf_s(result, "base: 0x%llX, size: 0x%llX", uint64_t(Base()), uint64_t(Size()));
+        return result;
+    }
+};
+
 struct PyMemory
 {
     static py::bytes Read(duint addr, duint size)
@@ -95,6 +131,22 @@ struct PyMemory
     static duint GetSize(duint addr)
     {
         return Memory::GetSize(addr);
+    }
+
+    static std::vector<PyMemoryPage> Map()
+    {
+        MEMMAP memmap = { 0 };
+        if(!DbgMemMap(&memmap))
+            throw std::invalid_argument("Failed to retrieve memory map.");
+        std::vector<PyMemoryPage> result;
+        if(memmap.count)
+        {
+            result.resize(memmap.count);
+            for(int i = 0; i < memmap.count; i++)
+                result[i].page = memmap.page[i];
+            BridgeFree(memmap.page);
+        }
+        return result;
     }
 };
 
@@ -139,35 +191,12 @@ namespace
                 throw std::invalid_argument("Invalid module name.");
         }
 
-        duint Base()
-        {
-            return info.base;
-        }
-
-        duint Size()
-        {
-            return info.size;
-        }
-
-        duint Entry()
-        {
-            return info.entry;
-        }
-
-        std::string Name()
-        {
-            return info.name;
-        }
-
-        std::string Path()
-        {
-            return info.path;
-        }
-
-        std::vector<ModuleSectionInfo> Sections()
-        {
-            return sections;
-        }
+        duint Base() const { return info.base; }
+        duint Size() const { return info.size; }
+        duint Entry() const { return info.entry; }
+        std::string Name() const { return info.name; }
+        std::string Path() const { return info.path; }
+        std::vector<ModuleSectionInfo> Sections() const { return sections; }
 
         static PyModule Main()
         {
@@ -197,6 +226,18 @@ PYBIND11_MODULE(scriptapi, m)
     m.doc() = "Python module to wrap the x64dbg script api.";
     m.def("main_module", []() {return PyModule(Script::Module::GetMainModuleBase()); }, "The main module object.");
 
+    py::class_<PyMemoryPage>(m, "MemoryPage")
+    .def(py::init<duint>()) //page = scriptapi.MemoryPage(0x400000)
+    .def_property_readonly("base", &PyMemoryPage::Base, "MEMORY_BASIC_INFORMATION.BaseAddress")
+    .def_property_readonly("size", &PyMemoryPage::Size, "MEMORY_BASIC_INFORMATION.RegionSize")
+    .def_property_readonly("protect", &PyMemoryPage::Protect, "MEMORY_BASIC_INFORMATION.Protect")
+    .def_property_readonly("alloc_base", &PyMemoryPage::AllocBase, "MEMORY_BASIC_INFORMATION.AllocationBase")
+    .def_property_readonly("alloc_protect", &PyMemoryPage::AllocProtect, "MEMORY_BASIC_INFORMATION.AllocationProtect")
+    .def_property_readonly("state", &PyMemoryPage::State, "MEMORY_BASIC_INFORMATION.State")
+    .def_property_readonly("type", &PyMemoryPage::Type, "MEMORY_BASIC_INFORMATION.Type")
+    .def_property_readonly("info", &PyMemoryPage::Info, "Additional information (module/section name).")
+    .def("__str__", &PyMemoryPage::Str);
+
     py::class_<PyMemory>(m, "Memory")
     .def(py::init<>()) //it's the pythonic way: mem = scriptapi.Memory()
     .def_static("read", PyMemory::Read, arg(addr), arg(size), "Read `size` bytes at `addr`.")
@@ -216,7 +257,8 @@ PYBIND11_MODULE(scriptapi, m)
     .def_static("read_qword", Memory::ReadQword, arg(addr), "Read a qword at `addr`.")
     .def_static("write_qword", Memory::WriteQword, arg(addr), arg(value), "Write `value` as a qword to `addr`.")
     .def_static("read_ptr", Memory::ReadPtr, arg(addr), "Read a pointer at `addr`.")
-    .def_static("write_ptr", Memory::WritePtr, arg(addr), arg(value), "Write `value` as a pointer to `addr`.");
+    .def_static("write_ptr", Memory::WritePtr, arg(addr), arg(value), "Write `value` as a pointer to `addr`.")
+    .def_property_readonly_static("map", pget(PyMemory::Map), "Get list of MemoryPages forming the memory map.");
 
     py::class_<PyRegister>(m, "Registers")
     .def(py::init<>()) //it's the pythonic way: regs = scriptapi.Registers()
