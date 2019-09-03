@@ -168,6 +168,11 @@ namespace
         {
             return sections;
         }
+
+        static PyModule Main()
+        {
+            return PyModule(GetMainModuleBase());
+        }
     };
 }
 
@@ -190,6 +195,7 @@ PYBIND11_MODULE(scriptapi, m)
 #define pset(x) [](py::object, duint value) { return x(first_agument_t<decltype(x)>(value)); }
 
     m.doc() = "Python module to wrap the x64dbg script api.";
+    m.def("main_module", []() {return PyModule(Script::Module::GetMainModuleBase()); }, "The main module object.");
 
     py::class_<PyMemory>(m, "Memory")
     .def(py::init<>()) //it's the pythonic way: mem = scriptapi.Memory()
