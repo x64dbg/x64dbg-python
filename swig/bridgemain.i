@@ -30,6 +30,20 @@ std::vector<THREADALLINFO> GetThreadInfoList(THREADLIST* l)
 }
 %}
 
+%template(BpVector) std::vector<BRIDGEBP>;
+
+%inline %{
+std::vector<BRIDGEBP> GetBpList(BPMAP* bm)
+{
+    std::vector<BRIDGEBP> vec(
+        bm->bp,
+        bm->bp + bm->count
+    );
+    BridgeFree(bm->bp);
+    return vec;
+}
+%}
+
 %include <windows.i>
 #define DECLSPEC_ALIGN(x) __declspec(align(x))
 %include "..\pluginsdk\bridgemain.h"
