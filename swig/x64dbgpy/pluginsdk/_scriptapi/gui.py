@@ -1,3 +1,4 @@
+import ctypes
 from .. import x64dbg
 
 
